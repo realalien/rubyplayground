@@ -13,6 +13,7 @@ class KitchenBowl
     def artificial_evolve
       research
       ask_for_advice
+      action_feedback
     end
 end
 

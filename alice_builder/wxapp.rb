@@ -5,7 +5,7 @@ require "wx"
 include Wx 
 
 
-require "observable"
+# require "observable"
 
 # IDEA: add customized listeners to listen to the status of nighly build status.
 
@@ -18,31 +18,32 @@ class TaskPanel < Panel
 
 
     # TODO: how to separate the GUI with the main task thread? 
-    def initialize( parent,  id, 
+    def initialize( parent,  
+               id = -1, 
                pos = DEFAULT_POSITION, 
                size = DEFAULT_SIZE, 
                style = TAB_TRAVERSAL, 
-               name = "panel", 
-               task_to_listen = nil )
-        super.intialize(parent, id, pos, size, style, name )
+               name = "panel", task_to_listen = nil ) 
+        super(parent, id , pos, size, style, name )
+        @task = task_to_listen   # TODO: decide if this is reference or shallow copy!
+    end
         
+        
+    def install_ui
         panel_sizer = BoxSizer.new(HORIZONTAL)
-        status_panel.set_sizer(panel_sizer)
+        self.set_sizer(panel_sizer) 
         
-        test_label = StaticText.new(status_panel, -1, 'My Label Text', 
+        test_label = StaticText.new(self, -1, 'My Label Text', 
                                     DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_LEFT)
         test_label.set_background_colour(Wx::GREEN)
 
         # TODO: should set the background of the panel to 
-        redo_button = Button.new(status_panel, -1, 'Redo', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Redo')
-        recheck_button = Button.new(status_panel, -1, 'Recheck', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Recheck')
+        redo_button = Button.new(self, -1, 'Redo', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Redo')
+        recheck_button = Button.new(self, -1, 'Recheck', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Recheck')
         panel_sizer.add(test_label, 50, Wx::ALL )
         panel_sizer.add(redo_button, 25,  Wx::RIGHT)
         panel_sizer.add(recheck_button, 25 , Wx::RIGHT)
     end
-    
-        
-        
     
     
     
@@ -62,7 +63,16 @@ class MinimalApp < App
         
         # TODO: question, why the two panel adding in, those panels are sequeezed into small area? 
  
-        custom_panel = TaskPanel.new(f)
+        t1 = Task.new "demo task"
+        t1.plan do 
+            5.times do 
+                
+            end
+        end
+        
+        custom_panel = TaskPanel.new(f, -1)
+        custom_panel.install_ui
+         
         
 #        status_panel = Panel.new(f)
 #        status_panel_sizer = BoxSizer.new(HORIZONTAL)
@@ -89,6 +99,9 @@ class MinimalApp < App
         f.show()
     end
 end
+
+
+
 MinimalApp.new.main_loop
 
 #if __FILE__ == $0

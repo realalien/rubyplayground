@@ -7,8 +7,6 @@ class Task
     
     def initialize(name)
         @name = name
-        
-        
     end
     
     def plan(&how_to)

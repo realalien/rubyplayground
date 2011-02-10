@@ -52,7 +52,7 @@ class TaskPanel < Panel
     def monitor_task(task)
         if task.is_a? Task  # do we have a more general design? 
             @task = task
-            if @task.evalute_result == TaskStatus::OK
+            if @task.evaluate_result == TaskStatus::OK
                 @test_label =  set_background_colour(Wx::GREEN)
             else
                 @test_label =  set_background_colour(Wx::RED)
@@ -61,10 +61,49 @@ class TaskPanel < Panel
             puts "UI now only listens to the status of task, it's not that general for anything else."
         end
     end
-    
-    
 end
 
+# panel containing the button to tasks ui create/delete/suite management
+class ActionPanel < Panel
+   def initialize( parent,  
+               id = -1, 
+               pos = DEFAULT_POSITION, 
+               size = DEFAULT_SIZE, 
+               style = TAB_TRAVERSAL, 
+               name = "panel", task_to_listen = nil ) 
+        super(parent, id , pos, size, style, name )
+    end
+    
+    def install_ui
+        @panel_sizer = BoxSizer.new(HORIZONTAL)
+        self.set_sizer(@panel_sizer) 
+        
+        # TODO: should set the background of the panel to 
+        @newtask_button = Button.new(self, -1, 'New Task', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Redo')
+        #@recheck_button = Button.new(self, -1, 'Recheck', DEFAULT_POSITION, DEFAULT_SIZE, ALIGN_RIGHT, DEFAULT_VALIDATOR, 'Recheck')
+        @panel_sizer.add(@newtask_button, 25,  Wx::RIGHT)
+        #@panel_sizer.add(@recheck_button, 25 , Wx::RIGHT)  
+        evt_button(@newtask_button) { new_task_dialog }
+    end
+    
+    def new_task_dialog
+      dd = Dialog.new( self,  
+             -1,  
+             "Define a new task", 
+             DEFAULT_POSITION, 
+             DEFAULT_SIZE, 
+             DEFAULT_DIALOG_STYLE, 
+             "dialogBox")
+      dd.show_modal
+      # test
+#      Window.new( self.parent ,  -1, 
+#            DEFAULT_POSITION, 
+#            DEFAULT_SIZE,  
+#            0, 
+#            "New Task")
+    end
+    
+end
 
 
 class MinimalApp < App
@@ -81,7 +120,8 @@ class MinimalApp < App
  
          t1 = Task.new "demo task"
          t2 = Task.new "demo task 2"
-         t2.set_status = TaskStatus::UNAVAIL
+         t2.set_status TaskStatus::UNAVAIL
+
 #        t1.plan do 
 #            5.times do 
 #                puts "aaaaaa!"
@@ -99,8 +139,13 @@ class MinimalApp < App
         custom_panel2.install_ui
         custom_panel.monitor_task(t2)
         
+        action_panel = ActionPanel.new(f, -1)
+        action_panel.install_ui
+        
         vbox.add(custom_panel)
         vbox.add(custom_panel2)
+        vbox.add(action_panel)
+        
         
         # Set the window's sizer to the vbox
         f.set_sizer( vbox )

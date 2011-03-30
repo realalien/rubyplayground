@@ -1,0 +1,29 @@
+<locStrings locale="ja_JP">
+<locString Key="could_not_connect_to_core">EAコアへ接続できませんでした。</locString>
+<locString Key="unknown_error">不明なエラー</locString>
+<locString Key="awc_invalid_license">無効なライセンス。リーズンコード = %s.</locString>
+<locString Key="awc_too_many_concurrent_licenses">このアカウントで [gameName] にアクセスしたコンピュータが多すぎます。しばらくしてから再度お試しください。</locString>
+<locString Key="core_connection_lost">EAコアへの接続が切断されました</locString><locString Key="awc_internal_failure">ゲームの設定に問題があります。ゲームを再インストールしてください。</locString>
+<locString Key="awc_missing_param_file">ゲームの設定に問題があります。ゲームを再インストールしてください。</locString>
+<locString Key="awc_invalid_param_file">ゲームの設定に問題があります。ゲームを再インストールしてください。</locString>
+<locString Key="awc_cant_get_license">[gameName]を有効化するためにEAサーバーに接続できませんでした。しばらくしてから再度お試しください。</locString>
+<locString Key="awc_virtual_pc_guard">このゲームは仮想環境ではプレイできません。 ホストのWindows環境を使用してください。</locString>
+<locString Key="awc_messagebox_title">有効化</locString><locString Key="awc_invalid_or_missing_param_file">.parファイルが無効か存在しません。ゲームを再インストールしてください。</locString>
+<locString Key="awc_dll_bind_error">機能を正しく実行できませんでした。AWC.dllが古いか、破損している可能性がございます。ゲームを再インストールしてください。</locString
+><locString Key="awc_invalid_path">パスが無効なためUIを起動できませんでした。ゲームを再インストールしてください。</locString
+><locString Key="awc_license_failure">ライセンスが無効か破損しています。インターネットに接続した状態で再度お試しください。</locString>
+<locString Key="awc_launch_failure">ゲームを起動できません。再インストールしてから再度お試しください。</locString>
+<locString Key="awc_trial_before">このゲームのトライアル期間はまだ始まっていません。しばらくしてから再度お試しください。</locString>
+<locString Key="awc_trial_after">このゲームのトライアル期間が終了致しました。</locString>
+<locString Key="awc_trial_before_date">このゲームのトライアル期間はまだ始まっていません。%s経ってから再度お試しください。</locString>
+<locString Key="awc_unlock_before">このゲームはまだアンロックされていません。しばらくしてから再度お試しください。</locString>
+<locString Key="awc_unlock_before_date">このゲームはまだアンロックされていません。%s経ってから再度お試しください。</locString>
+<locString Key="awc_too_many_concurrent_licenses_granted">[gameName] のライセンスのリクエストが多すぎます。しばらくしてから再度お試しください。</locString>
+<locString Key="guest_accounts_denied">このアプリケーションはゲストアカウントまたは権限の無いWindowsアカウントでは起動できません。別のWindowsアカウントでログインしてください。</locString>
+<locString Key="invalid_license_user_clock">このゲームをプレイするためのライセンスが無効です。コンピュータの設定日時が正しいか確認してから再度お試しください。</locString>
+<locString Key="offline_or_server_unavailable">インターネットの接続を確認してください。問題が解決しない場合は、サーバが利用できない状態の可能性があります。しばらくしてから再度お試しください。</locString>
+<locString Key="awc_suspended_entitlements">Cannot grant license. Suspended entitlements.</locString>
+<locString Key="awc_invalid_account_status">Cannot grant license. Account status is invalid.</locString>
+<locString Key="awc_license_concurrency_guard">Too many license requests. Please try again later.</locString>
+<locString Key="awc_eadm_required_to_play">このゲームをお楽しみいただくには、EAダウンロードマネージャーが必要です。EAダウンロードマネージャーをインストールしてから、ゲームを再起動してください。EAダウンロードマネージャーが既にインストールされているにもかかわらずゲームが実行されない場合は、カスタマーサポートにお問い合わせください。</locString>
+<locString Key="awc_missing_eadm">EAダウンロードマネージャーはインストールされていません。ゲームをプレイするにはEAダウンロードマネージャーをインストールしてください。</locString></locStrings>

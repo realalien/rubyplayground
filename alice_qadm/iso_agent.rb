@@ -5,6 +5,7 @@
 
 # IDEA: try not abstract with too many concepts, to allowing easy voice-based refactoring and graphic manipulations
 
+# IDEA: try mimic a game engine architecture, 
 
 
  

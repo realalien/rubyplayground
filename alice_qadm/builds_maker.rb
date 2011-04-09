@@ -4,6 +4,9 @@
 # * Before any GUI tool is implemented, try to modulate the methods   
 # * concept of transaction, each build shall be created clean, can't be tainted by other process.
 
+# IDEA:
+# * 
+
 require 'pp'
 require 'fileutils'
 

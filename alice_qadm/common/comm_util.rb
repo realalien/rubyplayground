@@ -4,8 +4,7 @@
 # Simple assert  
 # see: http://snippets.dzone.com/posts/show/925
 def assert(*msg)
-  puts "[ Assertion Failed ] "
-  raise "#{msg}" unless yield if $DEBUG
+  raise "[ Assertion Failed ]\n " + "#{msg}" unless yield if $DEBUG
 end
 
 

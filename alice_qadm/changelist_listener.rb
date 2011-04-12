@@ -3,9 +3,10 @@
 #   actions (e.g. notification, proposals of rebuilding )
 
 
-require "P4"
+require "P4"   # Q: why the eclipse can't recognize the P4 gem? 
 require "pp"
 
+require File.join(File.dirname(__FILE__),  'changelist.rb' )
 require File.join(File.dirname(__FILE__),  'common/comm_util.rb' )
 
 #  require 'fileutil'  # TODO: find candidate class for ruby 1.8.7 because no 'fileutil' exists!
@@ -17,6 +18,9 @@ require File.join(File.dirname(__FILE__),  'common/comm_util.rb' )
 
 
 $DEBUG=true   # SUG: it's not suggested to use debug, please replace with unit test cases.
+
+$ALICE_PROJECT_SOURCE_SUFFIXES = ["CPP", "H" ]
+
 
 class P4Tool
   attr_accessor :p4
@@ -130,7 +134,8 @@ class ChangelistTool
   end
   
   
-  # hopefully the client code can look like
+  # hopefully the client code can look like below, 
+  # and return true/false for program use and feedback to human.
 =begin
   suggest_using_changelists(1111) do
     # add points of interests to allow give feedback e.g.
@@ -144,11 +149,13 @@ class ChangelistTool
 =end  
   
   # Q: how to give reports as feedback?
+  # IDEA: it looks unnecessary to test an old changelist with a new changelist, so the method
+  #     implemented now is assumed that a new cl will be introduced and all suggestions are based
+  #     on that. Otherwise, context info. like HEAD revision of the workspace should also be ack.
   def suggest_using_changelists(cl_number, &poi)
     chg = chg_spec(cl_number)
     need_recompile? chg
-    
-    
+    need_recook? chg
 #    if not block_given?
 #       # list all the default check for a changelist
 #       
@@ -156,68 +163,39 @@ class ChangelistTool
 #       yield
 #    end
    
-   
   end
   
   
-  def need_recompile? chg
-    if chg.has_new_source_code?
-      
+  def need_recompile? chg 
+    # should have some knowledge about existing binaries time stamp and if new changes actually applied.
+    # TODO: handling the test of existing head revision and changelist need to be introduced.
+    if chg.has_source_code?($ALICE_PROJECT_SOURCE_SUFFIXES)
+      return true
     end
+    return false
   end
+  
+  
+  def need_recook? chg
+    if chg.has_source_code?($ALICE_PROJECT_SOURCE_SUFFIXES)
+      return true
+    end
+    return false
+  end
+  
+  # watch out the file being checkout, it will cause problem
+  # (unable to get the file) for nightly build workspace if that file is 'opened'.
+  def monitor_local_open_files
+    
+  end
+  
+  
   
   
     
 end
 
 
-# we just create a skeleton, for easy data accessing, rather than hard-code every 
-# instance shall be created from a hash
-
-# ATTENTION: 
-# * All feedbacks should based on submitted changeslist, not pending one which may never check in.
-class Changelist
-  
-  KNOWN_ATTRS = ["rev", "action", "time", "type", "client", "desc", "depotFile", "status", "user"]
-   
-  def initialize id, p4_conn
-    @id = id
-    @p4 = p4_conn   # get tar
-  end
-  
-  def has_new_source_code?(*file_suffixes)
-    suffixes = []
-    # sanity check
-    file_suffixes.each do | f |
-       f.gsub!(".", "")  # remove dot if user specified
-       f.upcase!
-       suffixes  << f 
-    end
-    pp  suffixes 
-    
-    # load files infor from changelist number
-    begin
-        data = @p4.run("describe", @id )
-    rescue
-    
-    end
-    
-    pp data
-    pp data.class
-    
-    # TODO: should auto boxing the hash
-    dict = data[0] if not data.nil?
-    return false if data.nil?
-    
-  end
-
-  
-  # diagram to help to give best time for create a build based on the frequency of changes made.
-  def generate_daytime_distribution 
-      
-  end
-  
-end
 
 
 
@@ -225,13 +203,6 @@ end
 
 
 #  memory of history 
-
-
-
-
-
-
-
 
 
 if __FILE__ == $0
@@ -247,12 +218,28 @@ if __FILE__ == $0
   # puts lstn.read
   
   
-  
   # test run for give changelist advice   # program by intention   
   # TODO: yak-shave to put a dict into changelist 
   ###lstn.suggest("1111")  #  number in context is 
   
-  cl = Changelist.new("111", p4t.get_connection)
-  cl.has_new_source_code?
+  
+  cl = Changelist.new("1111", p4t.get_connection)
+  assert("changelist 1111 doesn't contains .cpp or .h") do
+    cl.has_source_code?(".cpp", ".h")  == false
+  end
+  
+  c2 = Changelist.new("1117", p4t.get_connection)
+  assert  { c2.has_source_code?(".h", ".cpp")  == true  } 
+  
+  # test if vararg has a parameter of class Array  
+  # SUG: this test shows that the assertion text not shows the intention of the test and specific scenario for testing
+  assert("changelist 1111 doesn't contains .cpp or .h even specify an array as source code criteria") do
+    cl.has_source_code?($ALICE_PROJECT_SOURCE_SUFFIXES)  == false
+  end
+  
+  
+  c3 =  Changelist.new("1117", p4t.get_connection)
+  assert("changelist 1117 is submitted! ")  {c3.is_submitted?  == true }
+  
   
 end

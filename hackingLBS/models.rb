@@ -10,6 +10,11 @@ $b = Mechanize.new { |agent|
 
 
 class Explorable
+    # MongoMapper's 
+    include MongoMapper::Document
+    key :dianping_id, String, :required => true
+    key :name, String
+    
     attr_accessor :dianping_id, :name   #, :link
     
     def initialize(dianping_id)
@@ -18,7 +23,7 @@ class Explorable
 
     def link=(link)
         @link = link;
-        @name = link.text unless link.text.empty?
+        @name = link.text || ""
     end
     
     def link
@@ -34,12 +39,7 @@ end
 # TODO: some comparison methods 
 
 class Member < Explorable
-    
-    include MongoMapper::Document
-    
-    def init_from_dianping_id
-    end
-
+  
     # Create member instance from member id observed, for the cases that the user is not created from other Dianping data.
 
     def self.created_from_link(link)
@@ -55,16 +55,21 @@ class MemberFinder
 
 end
 
+
+# ======================================================================================
+
+
 # NOTE: For now, it's only model after shops of 'dianping.com', mainly according to the observable information.
 
 #
 
-class Shop < Explorable
+# TODO: experiment
+class UpdateLogging
+    include MongoMapper::EmbeddedDocument
+    
+end
 
-    # MongoMapper's 
-    include MongoMapper::Document
-    
-    
+class Shop  < Explorable
     
     # Create member instance from member id observed, for the cases that the user is not created from other Dianping data.
     def self.created_from_link(link)
@@ -96,7 +101,17 @@ class Shop < Explorable
                        #TODO:DIG: sniff for more refined data.
                        #if one.is_refined?
                            # TODO: replace or update the old data.
-                       #end    
+                       #end
+                       
+                       #experimental, refine the name of the member
+                       old_index = members.find_index one
+                       puts old_index
+                       if old_index != nil
+                           puts members[old_index].name
+                           if members[old_index].name.empty? && !one.name.empty?
+                               old.name = one.name #TODO: not replace, keep logging.
+                           end
+                       end
                    else 
                        members << one
                    end 

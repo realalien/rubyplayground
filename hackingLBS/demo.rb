@@ -5,16 +5,34 @@ require 'mechanize'
 require 'uri'
 
 require 'mongo'
+require 'mongo_mapper'
 
 require 'pp'
 require File.join(File.dirname(__FILE__), "models.rb") 
 
+
+$DATABASE_DEV = "lbs4community_dev"
+
 #TODO: exception handling when dealing with url.
 $a = Mechanize.new { |agent|
-
   agent.user_agent_alias = 'Mac Safari'
-
 }
+
+$connection = Mongo::Connection.new("localhost")
+$db = $connection.db($DATABASE_DEV)
+
+
+# MongoMapper.connection = Mongo::Connection.new
+MongoMapper.database = $DATABASE_DEV
+shops =  MongoMapper.database.collection("shops")
+
+
+#MongoMapper.database.collections.each do |c|
+#    puts c
+#    #c.drop
+#end
+
+#MongoMapper.database $DATABASE_DEV
 
 #note: programming by intention, this is the smallest goal I want to achieve
 def find_people_around_football_pitch_around_jindigeling
@@ -63,19 +81,49 @@ def dianping_shop_checkins(shop)
 
 end
 
-shops_poi = find_people_around_football_pitch_around_jindigeling
-p shops_poi
-users = []
-if  shops_poi.size > 0
-   shop_eg = shops_poi[0]
-    
-    puts "--------------------------------"
-    puts "#{shop_eg.name}  >> checkins are:"
-    puts "--------------------------------"
 
-    users = shop_eg.find_people_via_checkins
-    p users
+
+if __FILE__ == $0
+
+    
+    shops_poi = find_people_around_football_pitch_around_jindigeling
+    Shop.ensure_index(:dianping_id)
+    #Shop.collection.remove
+    
+=begin     
+    shops_poi.each do | shop|
+        the_one = Shop.find_by_dianping_id shop.dianping_id
+        if the_one
+            puts "Passed  #{shop.dianping_id}"
+            next
+        else
+            puts "Saving #{shop.dianping_id}"
+            shop.save
+        end    
+    end    
+   
+    all_shops = Shop.all
+    puts all_shops.map { |object| object.name }.inspect
+    
+=end    
+    p shops_poi
+    users = []
+    if  shops_poi.size > 0
+        shop_eg = shops_poi[0]
+        
+        puts "--------------------------------"
+        puts "#{shop_eg.name}  >> checkins are:"
+        puts "--------------------------------"
+        
+        users = shop_eg.find_people_via_checkins
+        p users
+    end
+
 end
+
+
+
+
 
 =begin
 

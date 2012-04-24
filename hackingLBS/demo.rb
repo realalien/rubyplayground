@@ -61,8 +61,18 @@ def dianping_search_shops(keywords)
             # p link.href
             if link.href =~ /\/shop\/[0-9]+$/ 
                 # p "----->  #{link.href}"
-                s = Shop.created_from_link(link)  
-                p s
+                #s = Shop.created_from_link(link) 
+                
+                #s = Shop.create(:dianping_id => File.basename(link.href),
+                #                :name =>  link.text || "")
+                #s.link = link
+                
+                s = Shop.new 
+                s.dianping_id = File.basename(link.href)
+                s.name = link.text  || ""
+                s.link = link
+                
+                #p s
                 shops << s  # Shop.created_from_link(link)  
             end
         end 
@@ -84,50 +94,98 @@ end
 
 
 if __FILE__ == $0
+    #note: programming by intention, this is the smallest goal I want to achieve
 
     
-    shops_poi = find_people_around_football_pitch_around_jindigeling
-    Shop.ensure_index(:dianping_id)
-    #Shop.collection.remove
+    # working on user's activities geo
+    user = Member.where(:dianping_id  => "7453596").first
+    puts "The user is #{user}"
     
-=begin     
+    if user
+        puts user.url
+    end
+    
+    
+    
+=begin
+    #shops_poi = find_people_around_football_pitch_around_jindigeling
+    kw = "嘉定区金地格林"
+    shops_poi = dianping_search_shops(kw)  
+
+    # Shop.collection.remove
+    #Member.collection.remove
+    #UpdateLog.collection.remove
+
+    Explorable.ensure_index(:dianping_id)
+    #Shop.ensure_index(:dianping_id)
+    #Member.ensure_index(:dianping_id)
+    
+    
+    #TODO:ESP: we should separate different model in different collection for sake of performance? 
+    #          or distinguish objects using field like 'doc_type'?
+    
     shops_poi.each do | shop|
-        the_one = Shop.find_by_dianping_id shop.dianping_id
+        the_one = Shop.where(:dianping_id  => "#{shop.dianping_id}" ).first
+        #p "the_one    #{the_one.inspect}"
+        
         if the_one
-            puts "Passed  #{shop.dianping_id}"
+            puts "Passed  #{shop.inspect}"
+            puts shop.update_logs.all || "No logs for shop" #TODO: failed in retrieving asso.
             next
         else
-            puts "Saving #{shop.dianping_id}"
+            puts "Saving #{shop}"
+            log = UpdateLog.create(:description => "webpage-parsing from shop search '#{kw}' , via: #{$DIANPING_SHOP_SEARCH_PATH}#{URI.escape(kw)}") 
+            shop.update_logs << log
             shop.save
         end    
     end    
    
-    all_shops = Shop.all
-    puts all_shops.map { |object| object.name }.inspect
+    #all_shops = Shop.all
+    #puts all_shops.map { |object| object.name }.inspect
     
-=end    
     p shops_poi
     users = []
     if  shops_poi.size > 0
         shop_eg = shops_poi[0]
         
-        puts "--------------------------------"
+        puts "----------------------------------"
         puts "#{shop_eg.name}  >> checkins are:"
-        puts "--------------------------------"
+        puts "----------------------------------"
         
         users = shop_eg.find_people_via_checkins
-        p users
+        
+        
+        p "==========="
+        p "Total:  #{users.size}"
+        users.each do | u |
+            #puts "Search for member with id : #{u.dianping_id}"
+            a = Explorable.where(:dianping_id => "#{u.dianping_id}").first
+               
+            #pp a 
+            
+            if a
+                puts "Already exists #{a.name} ID:#{a.dianping_id}."
+                puts a.update_logs.all || "No logs for member"   #TODO: failed in retrieving asso.
+            else
+                puts "Adding member[#{u.dianping_id}] to database..."
+                log = UpdateLog.create(:description => "collected from #{shop_eg.url_checkins}") 
+                u.update_logs << log 
+                u.save
+            end
+        end
+        
     end
+   
+=end
 
 end
 
 
 
 
-
 =begin
 
-=end
+
 #u1 = Member.new nil
 
 #u1

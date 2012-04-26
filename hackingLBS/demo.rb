@@ -7,6 +7,10 @@ require 'uri'
 require 'mongo'
 require 'mongo_mapper'
 
+
+require 'geokit'
+
+
 require 'pp'
 require File.join(File.dirname(__FILE__), "models.rb") 
 
@@ -53,31 +57,8 @@ $DIANPING_SHOP_SEARCH_PATH = "http://www.dianping.com/search/keyword/1/0_" #TODO
 #play: watch out for updated information, redo the search or history book-keeping.
 
 def dianping_search_shops(keywords)
-    shops = []
-    query_link = "#{$DIANPING_SHOP_SEARCH_PATH}#{URI.escape(keywords)}"
-    p query_link
-    $a.get(query_link) do |page|
-        page.links. each do | link |
-            # p link.href
-            if link.href =~ /\/shop\/[0-9]+$/ 
-                # p "----->  #{link.href}"
-                #s = Shop.created_from_link(link) 
-                
-                #s = Shop.create(:dianping_id => File.basename(link.href),
-                #                :name =>  link.text || "")
-                #s.link = link
-                
-                s = Shop.new 
-                s.dianping_id = File.basename(link.href)
-                s.name = link.text  || ""
-                s.link = link
-                
-                #p s
-                shops << s  # Shop.created_from_link(link)  
-            end
-        end 
-    end
-    return shops
+    query_link = "#{$DIANPING_SHOP_SEARCH_PATH}#{URI.escape(keywords)}"    
+    return DianpingPageParser.shops_in_page query_link
 end
 
 # Returns an array of users whose check-ins were recorded in a specific shop.
@@ -88,7 +69,6 @@ def dianping_shop_checkins(shop)
         users = Shop.find_people_via_checkins
     end
     return users || []
-
 end
 
 
@@ -96,15 +76,24 @@ end
 if __FILE__ == $0
     #note: programming by intention, this is the smallest goal I want to achieve
 
-    
+=begin     
+    include Geokit::Geocoders
+    res=MultiGeocoder.geocode('100 Spear st, San Francisco, CA')
+    puts res.ll # ll=latitude,longitude
+=end      
+   
     # working on user's activities geo
-    user = Member.where(:dianping_id  => "7453596").first
+    user = Member.where(:dianping_id  => "4479248").first
     puts "The user is #{user}"
     
     if user
-        puts user.url
+        shops = user.reviewed_shops
+        puts "#{user.name}(ID:#{user.dianping_id}) reviewed following shops(#{shops.count})"
+        pp shops[0].url 
+        
+        
     end
-    
+  
     
     
 =begin

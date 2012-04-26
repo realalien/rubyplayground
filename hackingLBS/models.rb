@@ -125,6 +125,10 @@ class DianpingPageParser
         return members
     end
 	
+    def self.structrued_address(shop_url)
+        
+
+    end
     
 
 end  # of class DianpingPageParser
@@ -204,8 +208,8 @@ class Shop   < Explorable
     end
 
     # IDEA: we can check for difference in data of different 
-    def address_from_dianping
-        
+    def address_dianping
+        return DianpingPageParser.structrued_address url  #[cityname, district_name, No.&road]
     end
     
 end

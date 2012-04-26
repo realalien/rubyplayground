@@ -55,6 +55,79 @@ class Explorable
 
 end
 
+class DianpingPageParser
+    
+    # TODO: handle the pagination
+    def self.shops_in_page(url)
+        shops = []
+        m = Mechanize.new { |agent|
+            agent.user_agent_alias = 'Mac Safari'
+        }
+        puts "[INFO] DianpingPageParser#shops_in_page(#{url})...begin"
+        m.get(url) do |page|
+            #puts page
+            page.links.each do | link |
+                if link.href =~ /\/shop\/[0-9]+$/ 
+                    s = Shop.new 
+                    s.dianping_id = File.basename(link.href)
+                    s.name = link.text  || ""
+                    s.link = link
+                    
+                    #p s
+                    shops << s  # Shop.created_from_link(link)  
+                end
+            end 
+        end
+        puts "[INFO] DianpingPageParser#shops_in_page...end"
+        return shops
+    end
+	
+	# TODO: handle the pagination
+    def self.members_in_page(url)
+        members  = []
+        m = Mechanize.new { |agent|
+            agent.user_agent_alias = 'Mac Safari'
+        }
+        puts "[INFO] DianpingPageParser#members_in_page(#{url})...begin"
+        m.get(url) do |page|
+            #puts page
+            page.links.each do | link |
+                if link.href =~ /\/member\/[0-9]+$/ 
+                    s = Member.new 
+                    s.dianping_id = File.basename(link.href)
+                    s.name = link.text  || ""
+                    s.link = link
+                
+                    if members.include?(s)
+                        #TODO:DIG: sniff for more refined data.
+                        #if one.is_refined?
+                        # TODO: replace or update the old data.
+                        #end
+                        
+                        #experimental, refine the name of the member
+                        old_index = members.find_index s
+                        #puts old_index
+                        if old_index != nil
+                            # puts members[old_index].name
+                            if members[old_index].name.empty? && !s.name.empty?
+                                members[old_index].name = s.name #TODO: not replace, keep logging.
+                                puts "Updating member's name...from: [#{members[old_index].name}] to #{s.name}"
+                            end
+                        end
+                    else
+                        #puts "[INFO] found new member: %d", 
+                        members << s
+                    end                 
+                end
+            end 
+        end
+        puts "[INFO] DianpingPageParser#members_in_page...end"
+        return members
+    end
+	
+    
+
+end  # of class DianpingPageParser
 
 # TODO: some comparison methods 
 
@@ -76,6 +149,16 @@ class Member  < Explorable
 
     def url
         return File.join($DIANPING_BASE_URL, "member/#{self.dianping_id}")
+    end
+
+    def reviews_url
+        return File.join(self.url, "reviews") 
+    end
+
+    # NOTE: no need to store the relationships, just crawling the pages and s
+    # IDEA:  API calls can be chained, aShop.checkins[<index_or_member name>].active_areas
+    def reviewed_shops
+        shops = DianpingPageParser.shops_in_page reviews_url
     end
 end
 
@@ -106,6 +189,7 @@ class Shop   < Explorable
         return one
     end
 
+
     def url
         return File.join($DIANPING_BASE_URL, "shop/#{self.dianping_id}")
     end
@@ -116,46 +200,12 @@ class Shop   < Explorable
 
     # Find a list of people via checkin pages.
     def find_people_via_checkins
-        members = []
-
-        $b.get(self.url_checkins) do |page|
-            page.links.each do |link|
-                if link.href =~ /\/member\/[0-9]+$/
-                    #one = Member.created_from_link(link)
-                    
-                    #one = Member.create(:dianping_id => File.basename(link.href),
-                    #                    :name => link.text)
-                    #one.link = link
-                    
-                    one  = Member.new
-                    one.dianping_id = File.basename(link.href)
-                    one.name = link.text
-                    one.link = link
-                    
-                   if members.include?(one)
-                       #TODO:DIG: sniff for more refined data.
-                       #if one.is_refined?
-                           # TODO: replace or update the old data.
-                       #end
-                       
-                       #experimental, refine the name of the member
-                       old_index = members.find_index one
-                       #puts old_index
-                       if old_index != nil
-                           # puts members[old_index].name
-                           if members[old_index].name.empty? && !one.name.empty?
-                               members[old_index].name = one.name #TODO: not replace, keep logging.
-                               puts "Updating member's name...from: [#{members[old_index].name}] to #{one.name}"
-                           end
-                       end
-                   else
-                       #puts "[INFO] found new member: %d", 
-                       members << one
-                   end 
-                end
-            end
-        end
-
-        return members
+        return DianpingPageParser.members_in_page url_checkins
     end
+
+    # IDEA: we can check for difference in data of different 
+    def address_from_dianping
+        
+    end
+    
 end

@@ -37,20 +37,20 @@ class Explorable
     def initialize(dianping_id)
 		@dianping_id = dianping_id
     end
-
-
-    def link=(link)
-        @link = link;
-        #@name = link.text || ""
-    end
-    
-    def link
-        return @link;
-    end
 =end
     
     def ==(another)
         @dianping_id == another.dianping_id
+    end
+
+    def add_attributes(attrs, log)
+        attrs.each_pair do | key, value |
+           self[key] = value 
+        end
+        
+        self.update_logs << log
+        
+        self.save
     end
 
 end

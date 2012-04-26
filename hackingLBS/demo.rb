@@ -9,7 +9,7 @@ require 'mongo_mapper'
 
 require 'pp'
 require File.join(File.dirname(__FILE__), "models.rb") 
-
+require File.join(File.dirname(__FILE__), "diggers.rb") 
 
 $DATABASE_DEV = "lbs4community_dev"
 
@@ -103,16 +103,19 @@ if __FILE__ == $0
     
     if user
         puts user.url
+        
+        puts user.class
+        
     end
     
     
     
-=begin
+=begin 
     #shops_poi = find_people_around_football_pitch_around_jindigeling
     kw = "嘉定区金地格林"
     shops_poi = dianping_search_shops(kw)  
 
-    # Shop.collection.remove
+    #Shop.collection.remove
     #Member.collection.remove
     #UpdateLog.collection.remove
 
@@ -175,7 +178,7 @@ if __FILE__ == $0
         end
         
     end
-   
+  
 =end
 
 end

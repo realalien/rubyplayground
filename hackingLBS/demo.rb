@@ -141,7 +141,7 @@ if __FILE__ == $0
                 people_may_live_in_jiading << person
             end
         end
-        puts "[INFO] #{shop.name} all checked-in members processed----------------"
+        puts "[INFO] ------------#{shop.name} all checked-in members processed----------"
     end
     # chck
     people_may_live_in_jiading.each do | p|

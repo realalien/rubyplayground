@@ -75,7 +75,15 @@ class DianpingPageParser
         }
         #puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
         DianpingPageParser.rest_to_avoid_page_forbidden
-        page = m.get(url) 
+        begin
+            page = m.get(url) 
+        rescue => e 
+            puts "[Error] "
+            puts e.message
+            puts e.backtrace
+            sleep 1.minutes
+            return []
+        end
         $TOTAL_PAGE_REQUEST += 1
 
         # First page of personal review, also find the pagination.
@@ -108,7 +116,16 @@ class DianpingPageParser
         # puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
         DianpingPageParser.rest_to_avoid_page_forbidden
 
-        m.get(url) do |page|
+        begin
+            page = m.get(url) 
+            rescue => e 
+            puts "[Error] "
+            puts e.message
+            puts e.backtrace
+            sleep 1.minutes
+            return []
+        end
+        
             #puts page
             page.links.each do | link |
                 if link.href =~ /\/member\/[0-9]+$/ 
@@ -139,7 +156,7 @@ class DianpingPageParser
                     end                 
                 end
             end 
-        end
+        
 
         $TOTAL_PAGE_REQUEST += 1
         #puts "[INFO] DianpingPageParser#members_in_page...end"
@@ -161,7 +178,17 @@ class DianpingPageParser
         #puts "[INFO] DianpingPageParser#number_of_pages...begin (#{url_has_pagination})"
 
         DianpingPageParser.rest_to_avoid_page_forbidden
-        page = m.get(url_has_pagination)
+
+        begin
+            page = m.get(url_has_pagination)
+        rescue => e 
+            puts "[Error] "
+            puts e.message
+            puts e.backtrace
+            sleep 1.minutes
+            return []
+        end
+        
         $TOTAL_PAGE_REQUEST += 1
 
         node_set = page.search(xpath)
@@ -172,7 +199,7 @@ class DianpingPageParser
             node_set.each do | node|
                 page_numbers << node.inner_text.to_i
             end
-            puts "[DEBUG] #{page_numbers.sort.last} pages found."
+            #puts "[DEBUG] #{page_numbers.sort.last} pages found."
             return page_numbers.sort.last
         else
             puts 
@@ -189,7 +216,7 @@ class DianpingPageParser
             return value
         else
             # TODO: halt and report!!!
-            puts "[Error] Only one node is expected for xpath #{xpath} in page #{page}."
+            puts "[Error] Only one node is expected for xpath #{xpath} in page #{page.href}."
             return nil
         end
     end
@@ -201,7 +228,16 @@ class DianpingPageParser
         #puts "[INFO] DianpingPageParser#structrued_address...begin (#{shop_url})"
 
         DianpingPageParser.rest_to_avoid_page_forbidden
-        page = m.get(shop_url)
+        begin
+            page = m.get(shop_url)
+        rescue => e 
+            puts "[Error] "
+            puts e.message
+            puts e.backtrace
+            sleep 1.minutes
+            return []
+        end
+       
         $TOTAL_PAGE_REQUEST += 1
         
 # TODO: exception handling when parsing!!!!!
@@ -261,12 +297,14 @@ class Member  < Explorable
         shops += DianpingPageParser.shops_in_page(reviews_url)
         # other pages
         num_of_pages = reviewed_pages 
+        origin_pages = num_of_pages
         if num_of_pages >=2
             max_process_page_for_one_ip = 20
             if num_of_pages > max_process_page_for_one_ip  #TODO: should be configurable.
                 num_of_pages = max_process_page_for_one_ip
+                puts "[INFO] Member #{name}(#{url}) has #{num_of_pages} pages of reviews."
                 puts "[INFO] Because the limit of page views at the server side, guessing of location may not be accurate!"
-                puts "[INFO] Around #{(10*max_process_page_for_one_ip*1.0)/(reviewed_pages*10)} reviewed shops are analysed."
+                puts "[INFO] Around #{(10*max_process_page_for_one_ip*1} out of #{origin_pages*10} reviewed shops are analysed."
             end
                
             (2..num_of_pages).each do | page_number |
@@ -301,8 +339,9 @@ class Member  < Explorable
         city_visits ||= []
         if city_visits.size > 0
             #puts "[DEBUG] city_visits sorted #{city_visits}"
-            puts "[DEBUG] for member named: #{name} #{url} has #{reviewed_shops.size} reviews ------"
-            puts "[DEBUG] Most visited city is #{city_visits[0][0]} #{city_visits[0][1]}/#{shops.size} ratio:(#{city_visits[0][1] * 1.0/shops.size })"
+            
+            puts "[INFO] For member named: #{name}(#{url}) has #{shops.size} shop reviews ------"
+            puts "[INFO] Most visited city is #{city_visits[0][0]} #{city_visits[0][1]}/#{shops.size} ratio:(#{city_visits[0][1] * 1.0/shops.size })"
             most_active_city = city_visits[0][0]
             
             # find most visited areas
@@ -316,12 +355,14 @@ class Member  < Explorable
             district_visits ||=[]
             if district_visits.size > 0
                 #puts "[DEBUG] district_visits sorted #{district_visits}"
-                puts "[DEBUG] Most visited district is #{district_visits[0][0]} #{district_visits[0][1]}/#{shops.size} ratio:(#{district_visits[0][1] * 1.0/shops.size })"
+                puts "[INFO] Most visited district is #{district_visits[0][0]} #{district_visits[0][1]}/#{shops.size} ratio:(#{district_visits[0][1] * 1.0/shops.size })"
                 most_active_district = district_visits[0][0]
             end
         else
-            puts "[DEBUG] No shops visited."
+            puts "[INFO] No shops reviewed."
         end
+        
+        puts "[INFO] ---------------"
         
         return [most_active_city, most_active_district ]
         
@@ -389,7 +430,8 @@ class Shop   < Explorable
         # first page
         people += DianpingPageParser.members_in_page(url_checkin)
         # other pages
-        num_of_pages = checkin_pages 
+        num_of_pages = checkin_pages
+        puts "[DEBUG] Shop #{name}(#{url}) has #{num_of_pages} pages of check-ins"
         if num_of_pages >=2
             max_process_page_for_one_ip = 20
             if num_of_pages > max_process_page_for_one_ip  #TODO: should be configurable.
@@ -406,7 +448,7 @@ class Shop   < Explorable
             end
         end
         people = people.uniq
-        puts people.size
+        #puts people.size
         return people
     end
     

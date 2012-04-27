@@ -16,6 +16,7 @@ require File.join(File.dirname(__FILE__), "models.rb")
 #require File.join(File.dirname(__FILE__), "diggers.rb") 
 
 $DATABASE_DEV = "lbs4community_dev"
+$TOTAL_PAGE_REQUEST = 0
 
 #TODO: exception handling when dealing with url.
 $a = Mechanize.new { |agent|
@@ -85,20 +86,20 @@ if __FILE__ == $0
     # working on user's activities geo
     # user = Member.where(:dianping_id  => "4479248").first
     
-    user = Member.new
-    user.dianping_id = "10034"
-    user.name = "樱の恋空"
-    user.save
+    #user = Member.new
+    #user.dianping_id = "2020768"
+    #user.name = "Uknowily翅膀"
+    #user.save
     
-    user = Member.where(:dianping_id  => "10034").first
+    #user = Member.where(:dianping_id  => "2020768").first
     
-    puts "The user is #{user}"
+    #puts "The user is #{user}"
     
-    if user
+    #if user
         # 
         # puts user.reviewed_shops_pages
         # puts user.reviewed_shops.size
-        puts user.most_reviewed_city_district
+    #    puts user.most_reviewed_city_district
 =begin        
         shops = user.reviewed_shops   # TODO: create a method that apply to all the elements of an array.
         puts "#{user.name}(ID:#{user.dianping_id}) reviewed following shops(#{shops.count})"
@@ -110,10 +111,44 @@ if __FILE__ == $0
         end
 =end
         
-    end
+    #end
   
+=begin    
+    shop = Shop.new
+    shop.dianping_id = "4127819"
+    shop.name = "马荣金地格林幼儿园"
+    shop.save
     
+    shop = Shop.where(:dianping_id  => "4127819").first
+    if  shop
+       people = shop.members_checked_in 
+        people.each { |p| puts p.inspect}
+    end
+=end
+    count = 0
+    people_may_live_in_jiading = []
+    kw = "嘉定区金地格林"
+    shops_poi = dianping_search_shops(kw)
+    puts "[INFO] Search shops by '#{kw}' ...... #{shops_poi.size} shop(s) found."
     
+    shops_poi.each do |shop|
+        people_once_checkedin = shop.members_checked_in
+        puts "[INFO] #{shop.name} has #{people_once_checkedin.size} people checked in."
+        count += people_once_checkedin.size
+        people_once_checkedin.each do | person|
+            city, area = person.most_reviewed_city_district
+            if area == "嘉定区"
+                people_may_live_in_jiading << person
+            end
+        end
+        puts "[INFO] #{shop.name} all checked-in members processed----------------"
+    end
+    # chck
+    people_may_live_in_jiading.each do | p|
+       puts p.inspect 
+    end
+    
+    puts "[INFO] #{people_may_live_in_jiading.size} out of #{count} may live in JiaDing"
 =begin 
     #shops_poi = find_people_around_football_pitch_around_jindigeling
     kw = "嘉定区金地格林"

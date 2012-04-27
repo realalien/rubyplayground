@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'mechanize'  # this should be wrapped in one place, e.g. util class. Q: do we need to do the require?
 require 'pp'
+require 'active_support'
 
 $DIANPING_BASE_URL = "http://www.dianping.com/"
 
@@ -57,15 +58,26 @@ end
 
 class DianpingPageParser
     
+    def self.rest_to_avoid_page_forbidden
+         
+        if $TOTAL_PAGE_REQUEST > 0 and $TOTAL_PAGE_REQUEST % 200 == 0
+            puts "[INFO] Page requests reached #{$TOTAL_PAGE_REQUEST} !"
+            puts "Resting ......"
+            sleep(2.minutes)
+        end
+    end
+
     # TODO: handle the pagination
     def self.shops_in_page(url)
         shops = []
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
+        #puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
+        DianpingPageParser.rest_to_avoid_page_forbidden
         page = m.get(url) 
-    
+        $TOTAL_PAGE_REQUEST += 1
+
         # First page of personal review, also find the pagination.
         #puts page
         page.links.each do | link |
@@ -83,7 +95,7 @@ class DianpingPageParser
         # shops in other pages
         
 
-        puts "[INFO] DianpingPageParser#shops_in_page...end"
+        #puts "[INFO] DianpingPageParser#shops_in_page...end"
         return shops
     end
 	
@@ -93,7 +105,9 @@ class DianpingPageParser
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
+        # puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
+        DianpingPageParser.rest_to_avoid_page_forbidden
+
         m.get(url) do |page|
             #puts page
             page.links.each do | link |
@@ -116,7 +130,7 @@ class DianpingPageParser
                             # puts members[old_index].name
                             if members[old_index].name.empty? && !s.name.empty?
                                 members[old_index].name = s.name #TODO: not replace, keep logging.
-                                puts "Updating member's name...from: [#{members[old_index].name}] to #{s.name}"
+                                #puts "Updating member's name...from: [#{members[old_index].name}] to #{s.name}"
                             end
                         end
                     else
@@ -126,7 +140,9 @@ class DianpingPageParser
                 end
             end 
         end
-        puts "[INFO] DianpingPageParser#members_in_page...end"
+
+        $TOTAL_PAGE_REQUEST += 1
+        #puts "[INFO] DianpingPageParser#members_in_page...end"
         return members
     end
 	
@@ -134,7 +150,7 @@ class DianpingPageParser
     def self.number_of_pages(url_has_pagination) # use page to avoid multiple times of retrieving and parsing
         
         # NOTE: hint: reviews pagination is in <div class="Pages"/>,  
-        # actually find all the  <a class='PageLink'>,  find the max one in innerText.
+        # actually find all the  <a class='PageLink'>,  find the max one among innerText.
 
         #  * if there is a "<span class="PageMore">...</span>", then we can get the max page number by the next one in the all page links array
         #  * if there isn't a 'pagemore', the max page number is in the page link one ahead of 'next Page' 
@@ -142,9 +158,12 @@ class DianpingPageParser
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#number_of_pages...begin (#{url_has_pagination})"
+        #puts "[INFO] DianpingPageParser#number_of_pages...begin (#{url_has_pagination})"
+
+        DianpingPageParser.rest_to_avoid_page_forbidden
         page = m.get(url_has_pagination)
-        
+        $TOTAL_PAGE_REQUEST += 1
+
         node_set = page.search(xpath)
 
         if node_set and node_set.length > 0 
@@ -153,9 +172,10 @@ class DianpingPageParser
             node_set.each do | node|
                 page_numbers << node.inner_text.to_i
             end
-            
+            puts "[DEBUG] #{page_numbers.sort.last} pages found."
             return page_numbers.sort.last
         else
+            puts 
             return 1  # only one page, no pagination
         end
         
@@ -169,7 +189,7 @@ class DianpingPageParser
             return value
         else
             # TODO: halt and report!!!
-            puts "[Error] Only one node is expected for xpath #{xpath}."
+            puts "[Error] Only one node is expected for xpath #{xpath} in page #{page}."
             return nil
         end
     end
@@ -178,9 +198,11 @@ class DianpingPageParser
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#structrued_address...begin (#{shop_url})"
+        #puts "[INFO] DianpingPageParser#structrued_address...begin (#{shop_url})"
 
+        DianpingPageParser.rest_to_avoid_page_forbidden
         page = m.get(shop_url)
+        $TOTAL_PAGE_REQUEST += 1
         
 # TODO: exception handling when parsing!!!!!
 
@@ -238,8 +260,16 @@ class Member  < Explorable
         # first page
         shops += DianpingPageParser.shops_in_page(reviews_url)
         # other pages
-        if reviewed_shops_pages >=2
-            (2..reviewed_shops_pages).each do | page_number |
+        num_of_pages = reviewed_pages 
+        if num_of_pages >=2
+            max_process_page_for_one_ip = 20
+            if num_of_pages > max_process_page_for_one_ip  #TODO: should be configurable.
+                num_of_pages = max_process_page_for_one_ip
+                puts "[INFO] Because the limit of page views at the server side, guessing of location may not be accurate!"
+                puts "[INFO] Around #{(10*max_process_page_for_one_ip*1.0)/(reviewed_pages*10)} reviewed shops are analysed."
+            end
+               
+            (2..num_of_pages).each do | page_number |
                 shops += DianpingPageParser.shops_in_page(File.join(reviews_url, "?pg=#{page_number}"))
             end
         end
@@ -247,7 +277,7 @@ class Member  < Explorable
         return shops
     end
 
-    def reviewed_shops_pages
+    def reviewed_pages
         return  DianpingPageParser.number_of_pages reviews_url
     end
 
@@ -270,6 +300,8 @@ class Member  < Explorable
                                    .reverse   # array
         city_visits ||= []
         if city_visits.size > 0
+            #puts "[DEBUG] city_visits sorted #{city_visits}"
+            puts "[DEBUG] for member named: #{name} #{url} has #{reviewed_shops.size} reviews ------"
             puts "[DEBUG] Most visited city is #{city_visits[0][0]} #{city_visits[0][1]}/#{shops.size} ratio:(#{city_visits[0][1] * 1.0/shops.size })"
             most_active_city = city_visits[0][0]
             
@@ -283,6 +315,7 @@ class Member  < Explorable
                                             .reverse   # array
             district_visits ||=[]
             if district_visits.size > 0
+                #puts "[DEBUG] district_visits sorted #{district_visits}"
                 puts "[DEBUG] Most visited district is #{district_visits[0][0]} #{district_visits[0][1]}/#{shops.size} ratio:(#{district_visits[0][1] * 1.0/shops.size })"
                 most_active_district = district_visits[0][0]
             end
@@ -290,7 +323,7 @@ class Member  < Explorable
             puts "[DEBUG] No shops visited."
         end
         
-        
+        return [most_active_city, most_active_district ]
         
     end
 end
@@ -327,8 +360,12 @@ class Shop   < Explorable
         return File.join($DIANPING_BASE_URL, "shop/#{self.dianping_id}")
     end
 
-    def url_checkins
+    def url_gone
         return File.join(self.url, "gone")
+    end
+
+    def url_checkin
+        return File.join(self.url, "checkin")
     end
 
     # Find a list of people via checkin pages.
@@ -339,6 +376,38 @@ class Shop   < Explorable
     # IDEA: we can check for difference in data of different 
     def address_dianping
         return DianpingPageParser.structrued_address url  #[cityname, district_name, No.&road]
+    end
+
+
+    def checkin_pages
+        DianpingPageParser.number_of_pages url_checkin
+    end
+
+
+    def members_checked_in
+        people = []
+        # first page
+        people += DianpingPageParser.members_in_page(url_checkin)
+        # other pages
+        num_of_pages = checkin_pages 
+        if num_of_pages >=2
+            max_process_page_for_one_ip = 20
+            if num_of_pages > max_process_page_for_one_ip  #TODO: should be configurable.
+                num_of_pages = max_process_page_for_one_ip
+                puts "[INFO] Because the limit of page views at the server side, guessing of checked-in may not be accurate!"
+                puts "[INFO] Around #{ (10*max_process_page_for_one_ip*1.0) / (checkin_pages*10)} members_checked_in are analysed."
+            end
+            
+            (2..num_of_pages).each do | page_number |
+                people_in_one_page= DianpingPageParser.members_in_page("#{url_checkin}?pageno=#{page_number}")
+                people_in_one_page.each do | p|
+                    people << p if not people.include? p
+                end
+            end
+        end
+        people = people.uniq
+        puts people.size
+        return people
     end
     
 end

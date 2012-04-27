@@ -83,16 +83,26 @@ if __FILE__ == $0
 =end      
    
     # working on user's activities geo
-    user = Member.where(:dianping_id  => "4479248").first
+    # user = Member.where(:dianping_id  => "4479248").first
+    
+    user = Member.new
+    user.dianping_id = "10034"
+    user.name = "樱の恋空"
+    user.save
+    
+    user = Member.where(:dianping_id  => "10034").first
+    
     puts "The user is #{user}"
     
     if user
-        user.most_reviewed_city_district
-        
+        # 
+        # puts user.reviewed_shops_pages
+        # puts user.reviewed_shops.size
+        puts user.most_reviewed_city_district
 =begin        
         shops = user.reviewed_shops   # TODO: create a method that apply to all the elements of an array.
         puts "#{user.name}(ID:#{user.dianping_id}) reviewed following shops(#{shops.count})"
-        #pp shops[0].url 
+        pp shops[0].url 
         #pp shops[0].address_dianping
         
         shops.each do | shop |

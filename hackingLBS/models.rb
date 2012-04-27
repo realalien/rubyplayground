@@ -64,20 +64,25 @@ class DianpingPageParser
             agent.user_agent_alias = 'Mac Safari'
         }
         puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
-        m.get(url) do |page|
-            #puts page
-            page.links.each do | link |
-                if link.href =~ /\/shop\/[0-9]+$/ 
-                    s = Shop.new 
-                    s.dianping_id = File.basename(link.href)
-                    s.name = link.text  || ""
-                    s.link = link
-                    
-                    #p s
-                    shops << s  # Shop.created_from_link(link)  
-                end
-            end 
+        page = m.get(url) 
+    
+        # First page of personal review, also find the pagination.
+        #puts page
+        page.links.each do | link |
+            if link.href =~ /\/shop\/[0-9]+$/ 
+                s = Shop.new 
+                s.dianping_id = File.basename(link.href)
+                s.name = link.text  || ""
+                s.link = link
+                
+                #p s
+                shops << s  # Shop.created_from_link(link)  
+            end
         end
+
+        # shops in other pages
+        
+
         puts "[INFO] DianpingPageParser#shops_in_page...end"
         return shops
     end
@@ -126,6 +131,35 @@ class DianpingPageParser
     end
 	
     
+    def self.number_of_pages(url_has_pagination) # use page to avoid multiple times of retrieving and parsing
+        
+        # NOTE: hint: reviews pagination is in <div class="Pages"/>,  
+        # actually find all the  <a class='PageLink'>,  find the max one in innerText.
+
+        #  * if there is a "<span class="PageMore">...</span>", then we can get the max page number by the next one in the all page links array
+        #  * if there isn't a 'pagemore', the max page number is in the page link one ahead of 'next Page' 
+        xpath = "//a[@class='PageLink']"
+        m = Mechanize.new { |agent|
+            agent.user_agent_alias = 'Mac Safari'
+        }
+        puts "[INFO] DianpingPageParser#number_of_pages...begin (#{url_has_pagination})"
+        page = m.get(url_has_pagination)
+        
+        node_set = page.search(xpath)
+
+        if node_set and node_set.length > 0 
+            # collect all the inner text an 
+            page_numbers = []
+            node_set.each do | node|
+                page_numbers << node.inner_text.to_i
+            end
+            
+            return page_numbers.sort.last
+        else
+            return 1  # only one page, no pagination
+        end
+        
+    end
 
     def self.get_one_item_from_xpath(xpath, page) # use page to avoid multiple times of retrieving and parsing
         node_set = page.search(xpath)   #puts "node_set length : #{node_set.length} "
@@ -198,8 +232,23 @@ class Member  < Explorable
 
     # NOTE: no need to store the relationships, just crawling the pages and s
     # IDEA:  API calls can be chained, aShop.checkins[<index_or_member name>].active_areas
+    # NOTE: the reviews may have multiple pages, this should be handled in DianpingPageParser, rather than in Member class!
     def reviewed_shops
-        shops = DianpingPageParser.shops_in_page reviews_url
+        shops = []
+        # first page
+        shops += DianpingPageParser.shops_in_page(reviews_url)
+        # other pages
+        if reviewed_shops_pages >=2
+            (2..reviewed_shops_pages).each do | page_number |
+                shops += DianpingPageParser.shops_in_page(File.join(reviews_url, "?pg=#{page_number}"))
+            end
+        end
+        
+        return shops
+    end
+
+    def reviewed_shops_pages
+        return  DianpingPageParser.number_of_pages reviews_url
     end
 
     def most_reviewed_city_district

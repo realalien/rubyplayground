@@ -63,7 +63,7 @@ class DianpingPageParser
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#shops_in_page(#{url})...begin"
+        puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
         m.get(url) do |page|
             #puts page
             page.links.each do | link |
@@ -88,7 +88,7 @@ class DianpingPageParser
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        puts "[INFO] DianpingPageParser#members_in_page(#{url})...begin"
+        puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
         m.get(url) do |page|
             #puts page
             page.links.each do | link |
@@ -125,9 +125,46 @@ class DianpingPageParser
         return members
     end
 	
-    def self.structrued_address(shop_url)
-        
+    
 
+    def self.get_one_item_from_xpath(xpath, page) # use page to avoid multiple times of retrieving and parsing
+        node_set = page.search(xpath)   #puts "node_set length : #{node_set.length} "
+        
+        if node_set and node_set.length == 1
+            value = node_set[0].inner_text
+            return value
+        else
+            # TODO: halt and report!!!
+            puts "[Error] Only one node is expected for xpath #{xpath}."
+            return nil
+        end
+    end
+    
+    def self.structrued_address(shop_url)        
+        m = Mechanize.new { |agent|
+            agent.user_agent_alias = 'Mac Safari'
+        }
+        puts "[INFO] DianpingPageParser#structrued_address...begin (#{shop_url})"
+
+        page = m.get(shop_url)
+        
+# TODO: exception handling when parsing!!!!!
+
+        # -- city
+        # NOTE: find node like 
+        # <a href="http://www.dianping.com/citylist" id="G_loc" class="loc-btn"><span class="txt">上海站</span></a>
+        xpath = "//div[@class='location' and @id='G_loc-wrap']/a[@href='http://www.dianping.com/citylist' and @id='G_loc']/span[@class='txt']"
+        city = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+        
+        # -- district  
+        xpath = "//span[@class='region' and @itemprop='locality region']"
+        district = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+
+        # -- address  
+        xpath = "//span[@itemprop='street-address']"
+        address = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+     
+        return [city, district, address]
     end
     
 
@@ -164,6 +201,49 @@ class Member  < Explorable
     def reviewed_shops
         shops = DianpingPageParser.shops_in_page reviews_url
     end
+
+    def most_reviewed_city_district
+        # NOTE: I think of two coding method, one is to use map-reduce of NoSQL products or use Ruby language  suger of grouping data.
+        
+        
+        # EXPERIMENTAL
+        # find the city most visited,
+        most_active_city = nil;
+        most_active_district = nil;
+        
+        shops = reviewed_shops
+        # reused by city_visits and area_visits
+        group_by_city_addrs = shops.collect{|shop| shop.address_dianping}  # array
+                                   .group_by {|element| element[0]}  # hashmap
+        
+        city_visits = group_by_city_addrs.map {|k,v| [k, v.length]} # hashmap
+                                   .sort_by {|k,v| v}  # hashmap
+                                   .reverse   # array
+        city_visits ||= []
+        if city_visits.size > 0
+            puts "[DEBUG] Most visited city is #{city_visits[0][0]} #{city_visits[0][1]}/#{shops.size} ratio:(#{city_visits[0][1] * 1.0/shops.size })"
+            most_active_city = city_visits[0][0]
+            
+            # find most visited areas
+            addrs_in_most_visited_city = group_by_city_addrs[most_active_city] # array of [city,district, address]
+            # TODO: how to handle address without district?!
+            # TODO: is it necessary to be objected-oriented?
+            group_by_district_addrs = addrs_in_most_visited_city.group_by {|element| element[1]} 
+            district_visits = group_by_district_addrs.map {|k,v| [k, v.length]} # hashmap
+                                            .sort_by {|k,v| v}  # hashmap
+                                            .reverse   # array
+            district_visits ||=[]
+            if district_visits.size > 0
+                puts "[DEBUG] Most visited district is #{district_visits[0][0]} #{district_visits[0][1]}/#{shops.size} ratio:(#{district_visits[0][1] * 1.0/shops.size })"
+                most_active_district = district_visits[0][0]
+            end
+        else
+            puts "[DEBUG] No shops visited."
+        end
+        
+        
+        
+    end
 end
 
 
@@ -175,7 +255,7 @@ end
 
 #
 
-# TODO: experiment
+# TODO: experiment      
 
 
 class Shop   < Explorable

@@ -13,7 +13,7 @@ require 'geokit'
 
 require 'pp'
 require File.join(File.dirname(__FILE__), "models.rb") 
-require File.join(File.dirname(__FILE__), "diggers.rb") 
+#require File.join(File.dirname(__FILE__), "diggers.rb") 
 
 $DATABASE_DEV = "lbs4community_dev"
 
@@ -87,9 +87,19 @@ if __FILE__ == $0
     puts "The user is #{user}"
     
     if user
-        shops = user.reviewed_shops
+        user.most_reviewed_city_district
+        
+=begin        
+        shops = user.reviewed_shops   # TODO: create a method that apply to all the elements of an array.
         puts "#{user.name}(ID:#{user.dianping_id}) reviewed following shops(#{shops.count})"
-        pp shops[0].url 
+        #pp shops[0].url 
+        #pp shops[0].address_dianping
+        
+        shops.each do | shop |
+            pp shop.address_dianping
+        end
+=end
+        
     end
   
     

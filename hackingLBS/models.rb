@@ -58,33 +58,45 @@ end
 
 class DianpingPageParser
     
+    # TODO: should allow caller method to use block to give sth in handling errors.
+    def self.safeguard_page_retrieve(url)
+        page = nil
+        DianpingPageParser.rest_to_avoid_page_forbidden
+        begin
+            m = Mechanize.new { |agent|
+                agent.user_agent_alias = 'Mac Safari'
+            }
+            page = m.get(url) 
+        rescue => e 
+            puts "[Error] retrieving #{url} "
+            puts e.message
+            puts e.backtrace
+            $ACCUMULATED_DELAY += 1
+            puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+            sleep $ACCUMULATED_DELAY
+            
+            # just return an empty Mechanize::Page
+            page =  Mechanize::Page.new
+        ensure
+            $TOTAL_PAGE_REQUEST += 1
+            return page
+        end
+    end
+    
     def self.rest_to_avoid_page_forbidden
          
         if $TOTAL_PAGE_REQUEST > 0 and $TOTAL_PAGE_REQUEST % 200 == 0
-            puts "[INFO] Page requests reached #{$TOTAL_PAGE_REQUEST} !"
-            puts "Resting ......"
-            sleep(2.minutes)
+            puts "[INFO] Page requests reached #{$TOTAL_PAGE_REQUEST} ! Resting ......"
+            sleep(($ACCUMULATED_DELAY + 1).minutes)
         end
     end
 
     # TODO: handle the pagination
     def self.shops_in_page(url)
         shops = []
-        m = Mechanize.new { |agent|
-            agent.user_agent_alias = 'Mac Safari'
-        }
-        #puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"
-        DianpingPageParser.rest_to_avoid_page_forbidden
-        begin
-            page = m.get(url) 
-        rescue => e 
-            puts "[Error] "
-            puts e.message
-            puts e.backtrace
-            sleep 1.minutes
-            return []
-        end
-        $TOTAL_PAGE_REQUEST += 1
+
+        #puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"        
+        page = DianpingPageParser.safeguard_page_retrieve url
 
         # First page of personal review, also find the pagination.
         #puts page
@@ -110,55 +122,41 @@ class DianpingPageParser
 	# TODO: handle the pagination
     def self.members_in_page(url)
         members  = []
-        m = Mechanize.new { |agent|
-            agent.user_agent_alias = 'Mac Safari'
-        }
-        # puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
-        DianpingPageParser.rest_to_avoid_page_forbidden
 
-        begin
-            page = m.get(url) 
-            rescue => e 
-            puts "[Error] "
-            puts e.message
-            puts e.backtrace
-            sleep 1.minutes
-            return []
-        end
+        # puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
+        page = DianpingPageParser.safeguard_page_retrieve url
         
             #puts page
-            page.links.each do | link |
-                if link.href =~ /\/member\/[0-9]+$/ 
-                    s = Member.new 
-                    s.dianping_id = File.basename(link.href)
-                    s.name = link.text  || ""
-                    s.link = link
-                
-                    if members.include?(s)
-                        #TODO:DIG: sniff for more refined data.
-                        #if one.is_refined?
-                        # TODO: replace or update the old data.
-                        #end
-                        
-                        #experimental, refine the name of the member
-                        old_index = members.find_index s
-                        #puts old_index
-                        if old_index != nil
-                            # puts members[old_index].name
-                            if members[old_index].name.empty? && !s.name.empty?
-                                members[old_index].name = s.name #TODO: not replace, keep logging.
-                                #puts "Updating member's name...from: [#{members[old_index].name}] to #{s.name}"
-                            end
+        page.links.each do | link |
+            if link.href =~ /\/member\/[0-9]+$/ 
+                s = Member.new 
+                s.dianping_id = File.basename(link.href)
+                s.name = link.text  || ""
+                s.link = link
+            
+                if members.include?(s)
+                    #TODO:DIG: sniff for more refined data.
+                    #if one.is_refined?
+                    # TODO: replace or update the old data.
+                    #end
+                    
+                    #experimental, refine the name of the member
+                    old_index = members.find_index s
+                    #puts old_index
+                    if old_index != nil
+                        # puts members[old_index].name
+                        if members[old_index].name.empty? && !s.name.empty?
+                            members[old_index].name = s.name #TODO: not replace, keep logging.
+                            #puts "Updating member's name...from: [#{members[old_index].name}] to #{s.name}"
                         end
-                    else
-                        #puts "[INFO] found new member: %d", 
-                        members << s
-                    end                 
-                end
-            end 
+                    end
+                else
+                    #puts "[INFO] found new member: %d", 
+                    members << s
+                end                 
+            end
+        end 
         
-
-        $TOTAL_PAGE_REQUEST += 1
         #puts "[INFO] DianpingPageParser#members_in_page...end"
         return members
     end
@@ -172,24 +170,9 @@ class DianpingPageParser
         #  * if there is a "<span class="PageMore">...</span>", then we can get the max page number by the next one in the all page links array
         #  * if there isn't a 'pagemore', the max page number is in the page link one ahead of 'next Page' 
         xpath = "//a[@class='PageLink']"
-        m = Mechanize.new { |agent|
-            agent.user_agent_alias = 'Mac Safari'
-        }
         #puts "[INFO] DianpingPageParser#number_of_pages...begin (#{url_has_pagination})"
 
-        DianpingPageParser.rest_to_avoid_page_forbidden
-
-        begin
-            page = m.get(url_has_pagination)
-        rescue => e 
-            puts "[Error] "
-            puts e.message
-            puts e.backtrace
-            sleep 1.minutes
-            return []
-        end
-        
-        $TOTAL_PAGE_REQUEST += 1
+        page = DianpingPageParser.safeguard_page_retrieve url_has_pagination
 
         node_set = page.search(xpath)
 
@@ -202,15 +185,16 @@ class DianpingPageParser
             #puts "[DEBUG] #{page_numbers.sort.last} pages found."
             return page_numbers.sort.last
         else
-            puts 
             return 1  # only one page, no pagination
         end
         
     end
 
     def self.get_one_item_from_xpath(xpath, page) # use page to avoid multiple times of retrieving and parsing
-        node_set = page.search(xpath)   #puts "node_set length : #{node_set.length} "
-        
+        if page and page.is_a? Mechanize::Page
+            node_set = page.search(xpath)   #puts "node_set length : #{node_set.length} "
+        end
+
         if node_set and node_set.length == 1
             value = node_set[0].inner_text
             return value
@@ -222,23 +206,7 @@ class DianpingPageParser
     end
     
     def self.structrued_address(shop_url)        
-        m = Mechanize.new { |agent|
-            agent.user_agent_alias = 'Mac Safari'
-        }
-        #puts "[INFO] DianpingPageParser#structrued_address...begin (#{shop_url})"
-
-        DianpingPageParser.rest_to_avoid_page_forbidden
-        begin
-            page = m.get(shop_url)
-        rescue => e 
-            puts "[Error] "
-            puts e.message
-            puts e.backtrace
-            sleep 1.minutes
-            return []
-        end
-       
-        $TOTAL_PAGE_REQUEST += 1
+        page = DianpingPageParser.safeguard_page_retrieve shop_url
         
 # TODO: exception handling when parsing!!!!!
 
@@ -359,7 +327,7 @@ class Member  < Explorable
                 most_active_district = district_visits[0][0]
             end
         else
-            puts "[INFO] No shops reviewed."
+            puts "[INFO] No shops reviewed by member named: #{name}(#{url})."
         end
         
         puts "[INFO] ---------------"

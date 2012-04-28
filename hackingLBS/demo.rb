@@ -17,6 +17,7 @@ require File.join(File.dirname(__FILE__), "models.rb")
 
 $DATABASE_DEV = "lbs4community_dev"
 $TOTAL_PAGE_REQUEST = 0
+$ACCUMULATED_DELAY = 1
 
 #TODO: exception handling when dealing with url.
 $a = Mechanize.new { |agent|
@@ -86,19 +87,19 @@ if __FILE__ == $0
     # working on user's activities geo
     # user = Member.where(:dianping_id  => "4479248").first
     
-    user = Member.new
-    user.dianping_id = "7868576"
-    user.name = "繁花落叶"
-    user.save
+    #user = Member.new
+    #user.dianping_id = "7868576"
+    #user.name = "繁花落叶"
+    #user.save
     
-    user = Member.where(:dianping_id  => "7868576").first
+    #user = Member.where(:dianping_id  => "7868576").first
     
-    puts "The user is #{user.name}(#{user.url})"
+    #puts "The user is #{user.name}(#{user.url})"
     
-    if user
-         puts user.reviewed_shops.size
-         puts user.most_reviewed_city_district
-    end
+    #if user
+    #     puts user.reviewed_shops.size
+    #     puts user.most_reviewed_city_district
+    #end
     
     
 =begin        
@@ -131,10 +132,11 @@ if __FILE__ == $0
     
     
     # NOTE: use shops to find people, determining potential users whose main active area is in JiaDing
-=begin    
+=begin 
+=end 
     count = 0
-    people_may_live_in_jiading = []
-    kw = "嘉定区金地格林"
+    people_may_live_near_dabaisu = []# people_may_live_in_jiading = []
+    kw = "虹口区大柏树" #kw = "嘉定区金地格林"
     shops_poi = dianping_search_shops(kw)
     puts "[INFO] Search shops by '#{kw}' ...... #{shops_poi.size} shop(s) found."
     
@@ -144,19 +146,19 @@ if __FILE__ == $0
         count += people_once_checkedin.size
         people_once_checkedin.each do | person|
             city, area = person.most_reviewed_city_district
-            if area == "嘉定区"
-                people_may_live_in_jiading << person
+            if area == "虹口区"
+               people_may_live_near_dabaisu << person   #people_may_live_in_jiading
             end
         end
         puts "[INFO] ------------#{shop.name} all checked-in members processed----------"
     end
     # chck
-    people_may_live_in_jiading.each do | p|
+    people_may_live_near_dabaisu.uniq.each do | p|  #people_may_live_in_jiading
        puts p.inspect 
     end
     
-    puts "[INFO] #{people_may_live_in_jiading.size} out of #{count} may live in JiaDing"
-=end 
+    puts "[INFO] #{people_may_live_near_dabaisu.uniq.size} out of #{count} may live in JiaDing"
+
  
  
 =begin 

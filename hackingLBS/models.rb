@@ -304,7 +304,7 @@ class Member  < Explorable
                 num_of_pages = max_process_page_for_one_ip
                 puts "[INFO] Member #{name}(#{url}) has #{num_of_pages} pages of reviews."
                 puts "[INFO] Because the limit of page views at the server side, guessing of location may not be accurate!"
-                puts "[INFO] Around #{(10*max_process_page_for_one_ip*1} out of #{origin_pages*10} reviewed shops are analysed."
+                puts "[INFO] Around #{10*max_process_page_for_one_ip*1} out of #{origin_pages*10} reviewed shops are analysed."
             end
                
             (2..num_of_pages).each do | page_number |

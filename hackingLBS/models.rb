@@ -302,8 +302,8 @@ class Member  < Explorable
             max_process_page_for_one_ip = 20
             if num_of_pages > max_process_page_for_one_ip  #TODO: should be configurable.
                 num_of_pages = max_process_page_for_one_ip
-                puts "[INFO] Member #{name}(#{url}) has #{num_of_pages} pages of reviews."
-                puts "[INFO] Because the limit of page views at the server side, guessing of location may not be accurate!"
+                puts "[INFO] Member #{name}(#{url}) has #{origin_pages} pages of reviews."
+                puts "[INFO] Because the limit of page views set up from the server side, guessing of location may not be accurate!"
                 puts "[INFO] Around #{10*max_process_page_for_one_ip*1} out of #{origin_pages*10} reviewed shops are analysed."
             end
                

@@ -1,0 +1,5 @@
+source :gemcutter
+gem "haml"
+gem "oauth"
+gem "json"
+gem "weibo"

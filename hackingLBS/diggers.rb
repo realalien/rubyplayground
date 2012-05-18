@@ -16,9 +16,27 @@ class Digger
     
     end
 
+        
+    # IDEA: see if a temp table can be created to hold the data for analysis, the data is not important enough for insertion to anything of 'points of interest'.
 
 end
 
+
+class WeiboInvestigator
+   
+    def initialize(target_account)
+        @target = target_account 
+    end
+    
+    # Print out the histogram of fans in geographical
+    def analysis_fans_geo_dist
+          # NOTE: though fans also have their weibo accounts, we can save it for later ref without server requests, but they are one time accounts,
+        
+        
+    end
+    
+    
+end
 
 
 class Analyzer

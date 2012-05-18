@@ -56,6 +56,12 @@ class Explorable
 
 end
 
+
+class SinaWeiboPageParser
+    
+    
+end
+
 class DianpingPageParser
     
     # TODO: should allow caller method to use block to give sth in handling errors.

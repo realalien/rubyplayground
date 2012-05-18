@@ -14,6 +14,7 @@ require 'geokit'
 require 'pp'
 require File.join(File.dirname(__FILE__), "models.rb") 
 #require File.join(File.dirname(__FILE__), "diggers.rb") 
+require File.join(File.dirname(__FILE__), "model_converter_for_rest.rb")
 
 $DATABASE_DEV = "lbs4community_dev"
 $TOTAL_PAGE_REQUEST = 0
@@ -75,6 +76,11 @@ end
 
 
 
+
+
+
+
+
 if __FILE__ == $0
     #note: programming by intention, this is the smallest goal I want to achieve
 
@@ -115,16 +121,29 @@ if __FILE__ == $0
         
     #end
   
-=begin    
+=begin
+
     shop = Shop.new
     shop.dianping_id = "4127819"
-    shop.name = "马荣金地格林幼儿园"
+    shop.name = "嘉定金地格林幼儿园"
     shop.save
     
     shop = Shop.where(:dianping_id  => "4127819").first
     if  shop
        people = shop.members_checked_in 
-        people.each { |p| puts p.inspect}
+        people.each { |p| puts p.inspect; 
+            
+            # add a logging for record update history, e.g. source, updated columns, update for what purpose?
+            
+            # actually add a record of member
+            MemberPosterForRestful.post_to_restful(p) 
+            
+        }
+        
+        # person = people[1]
+        
+        # REF: http://rubylearning.com/blog/2010/10/01/an-introduction-to-eventmachine-and-how-to-avoid-callback-spaghetti/
+        
     end
 =end
     
@@ -133,7 +152,7 @@ if __FILE__ == $0
     
     # NOTE: use shops to find people, determining potential users whose main active area is in JiaDing
 =begin 
-=end 
+
     count = 0
     people_may_live_near_dabaisu = []# people_may_live_in_jiading = []
     kw = "虹口区大柏树" #kw = "嘉定区金地格林"
@@ -158,7 +177,7 @@ if __FILE__ == $0
     end
     
     puts "[INFO] #{people_may_live_near_dabaisu.uniq.size} out of #{count} may live in JiaDing"
-
+=end 
  
  
 =begin 

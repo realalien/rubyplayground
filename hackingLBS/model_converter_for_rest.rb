@@ -19,12 +19,11 @@ class MemberPosterForRestful
 	def self.post_to_restful member
 		r = post("http://localhost:3000/account_pois.json" ,:query => {:account_poi => {:account_id => member.dianping_id , :name=>member.name, :sns_name=>"dianping.com"  }}, :options => { :headers => { 'ContentType' => 'application/json' } })
 		
-
 		puts "[INFO] #{r.headers['status']}"
 	end
 
 
-
+    
 
 end
 

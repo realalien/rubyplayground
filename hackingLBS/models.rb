@@ -57,10 +57,80 @@ class Explorable
 end
 
 
+
+
+# Deprecated: the twitters on sina weibo.com is injected via javascript, rather than static web page. This class might be useful in finding weibo user links in static webpages
+# ATTENTION: not test yet!
+# NOTE: It's only gather information by parsing the webpage.
+# This may only served as a comparison with the weibo API call which is more efficient.
 class SinaWeiboPageParser
     
-    
+    # TODO: should allow caller method to use block to give sth in handling errors.
+    def self.safeguard_page_retrieve(url)
+        page = nil
+        #DianpingPageParser.rest_to_avoid_page_forbidden
+        begin
+            m = Mechanize.new { |agent|
+            agent.user_agent_alias = 'Mac Safari'
+            }
+            page = m.get(url) 
+        rescue => e 
+            puts "[Error] retrieving #{url} "
+            puts e.message
+            puts e.backtrace
+            $ACCUMULATED_DELAY += 1
+            puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+            sleep $ACCUMULATED_DELAY
+            
+            # just return an empty Mechanize::Page
+            page =  Mechanize::Page.new
+        ensure
+            $TOTAL_PAGE_REQUEST += 1
+            return page
+        end
+    end
+
+    # TODO: handle the pagination
+    def self.users_in_page(url)
+        users = []
+        
+        user_id_regex = /^http:\/\/weibo.com\/u\/[0-9]+$/            # e.g.  http://www.weibo.com/u/2641707997
+        user_name_regex  = /^http:\/\/www.weibo.com\/n\/[[:print:]]$/  # e.g.  http://www.weibo.com/n/_%E9%98%BF%E7%89%9B_, http://www.weibo.com/n/virtualTomato
+        user_name_regex2 = /^http:\/\/weibo.com\/[[:alnum:]]$/          # e.g.  http://www.weibo.com/hzqixiang
+
+
+        weibo_account_regexes = [ user_id_regex, user_name_regex, user_name_regex2 ];
+
+        #puts "[INFO] DianpingPageParser#shops_in_page...begin (#{url})"        
+        page = SinaWeiboPageParser.safeguard_page_retrieve url
+        puts "Page retriving ....Done!"
+        # First page of personal review, also find the pagination.
+        #puts page
+        page.links.each do | link |
+            # find potential user link
+            puts ".........................#{link}"
+            weibo_account_regexes.each do | regex |
+                 if link.href =~ regex
+                     puts "Found user account, link  [#{link}]"
+                     break;
+                 end 
+            end 
+            
+            #if link.href =~ /\/shop\/[0-9]+$/ 
+            #    #p s
+            #    shops << s  # Shop.created_from_link(link)  
+            #end
+        end
+
+        # shops in other pages
+
+
+        #puts "[INFO] DianpingPageParser#shops_in_page...end"
+        #return shops
+    end
 end
+
+
 
 class DianpingPageParser
     

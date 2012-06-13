@@ -76,12 +76,13 @@ end
 
 
 
-
-
-
-
-
 if __FILE__ == $0
+    
+    
+    SinaWeiboPageParser.users_in_page "http://www.weibo.com/u/1191241142"
+    
+    
+    # ------------------------------------------------------------------------
     #note: programming by intention, this is the smallest goal I want to achieve
 
 =begin     

@@ -7,7 +7,7 @@ require 'open-uri'
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djDe8f4124d31dD2H3E"
+access_token = "2.00oO1cSBga_djD44f3867e5cQXw5fB"
 $client = Grizzly::Client.new(access_token)
 
 
@@ -127,9 +127,62 @@ class WeiboUser
 
     include Mongoid::Timestamps::Updated  # TODO: it actually mingles with the weibo's data. How to change default column updated_at
     
-    embeds_many :tag_category
+    embeds_many :tag_categories
 end
 
+
+class WeiboUserManager
+   
+    # TODO: actually a single tagging process, we query the local db multiple times, tune it please!
+    # TODO: see this class can also do some sanity checking.
+    def self.tag_user_with_category_and_tags(user, category_name, tags, *opt)
+        begin
+            target_user = WeiboUser.find(:id => user.id)
+            puts  target_user.nil? ? "YES " : "NO"
+            puts target_user.inspect
+            
+            # no exception thrown, should find one 
+            # see if has job category
+            puts "[INFO] User is already in the database local db"
+            cate = target_user.tag_categories.find(:name => category_name)
+            
+            if cate.nil?
+                cate = TagCategory.new( :name => category_name)
+                target_user.tag_categories << cate
+            end
+            
+            
+            tags.each do | t | 
+                tag = cate.tag_infos.where( :name => t)  # TODO: bugs here!
+                if tag.nil?
+                    cate.tag_infos << tag
+                else
+                    puts "[INFO] #{t.name} has been added already!"
+                end
+            end
+          
+            target_user.save!
+        rescue Mongoid::Errors::DocumentNotFound
+            puts "[INFO] Going to new and persistent user to local db"
+            remote_user = $client.user_show user.id  # TODO: seem already a valid weibo user here.
+            target_user = WeiboUser.new( JSON.parse(remote_user.data.to_json) )
+            
+            # add one TagCategory
+            category = TagCategory.new( :name => category_name)                
+            # add one TagInfo
+            
+            tags.flatten.each do | t |
+                tag = TagInfo.new(:name => t, :source => opt["source"] || "not specified" , :is_manual => (opt["is_manual"] == true ? true: false ) )        
+                # assembly
+                category.tag_infos << tag
+            end
+            
+            target_user.tag_categories << category
+            target_user.save!
+            puts target_user.inspect
+        end 
+    end
+end
 
 class TagCategory
     include Mongoid::Document
@@ -139,7 +192,7 @@ class TagCategory
     
     index({ name: 1 }, { unique: true, name: "tag_category_name_uniq_idx" })
     
-    embeds_many :tag_info
+    embeds_many :tag_infos
     embedded_in :weibo_user
 end
  
@@ -149,69 +202,169 @@ class TagInfo
     
     
     field :source, type: String   # where the data is retrieved
-    # field 
+    field :is_manual, type:Boolean 
     include Mongoid::Timestamps::Updated
     
     embedded_in :tag_category
 end
 
 
-# workload here!
-# IDEA: 
-class AutoTaggingBot
+class Organization
+    include Mongoid::Document 
     
+    
+    field :full_name, type: String
+    field :short_name, type:String
+    
+    def self.is_public_sector
+        return false ; #true if 
+    end
+
+    
+    
+end
+
+# workload here!
+
+
+# For now, it's a CLI processor
+class ManualTagger
+    
+    @@allowed_tag_categories = ["jobs", "pois"]
+    @@repo = {}
+    @@user = ""
+    
+    def self.ask_for_user_to_be_tagged
+        print "Please input the target user's weibo id or screen_name(enter to stop): "
+        name_or_id = $stdin.gets.chomp
+
+        # suppose id first, then screen id
+        begin
+            user = $client.user_show name_or_id
+            puts user.inspect
+            
+            @@user = user  # tempory keeping
+            @@repo[user.id] = {} 
+            self.ask_for_tag_category
+            #return user
+        rescue Grizzly::Errors::WeiboAPI  # not found, 20003
+            begin 
+                user = $client.user_show_by_screen_name name_or_id
+                puts user.inspect
+    
+                @@user_id = user.id 
+                @@repo[user.id] = {}
+                self.ask_for_tag_category
+                #return user
+            rescue Grizzly::Errors::WeiboAPI
+                return  # more than we can/will handle
+            end
+        ensure 
+            return
+        end
+    end
+    
+    def self.ask_for_tag_category
+        print "Please input a tag category(enter to stop): "
+        
+        # keep asking for a non empty string
+        while ((name =  $stdin.gets.chomp).empty? or  not @@allowed_tag_categories.include?(name) )
+            puts "'#{name}' is either empty or not in the categories allowed to be added! Input again:"
+            # TODO: since it's a manual process, we should require the input to be well formatted and reinput for confirmation
+        end
+
+        @@repo[@@user.id]["tag_category"] = name
+        puts @@repo.inspect
+
+        self.ask_for_tag_info
+    end
+
+
+    def self.ask_for_tag_info
+        tags = []
+        print "Please input tags(separated by blankspaces, enter to stop): "
+        
+        until (name =  $stdin.gets.chomp).empty?
+            # parse the input
+            tags << name.split(/\s+/)
+        end
+
+        puts tags
+        # actually we can only process on tag_category at a time, no need for '["tag_category"]["tags"]'
+        @@repo[@@user.id]["tags"] = tags
+
+        puts @@repo
+
+
+        print "Finally, where do you get this info(enter to stop): "
+        @@repo[@@user.id]["source"] =  $stdin.gets.chomp
+
+        self.manual_tagging(@@user,@@repo[@@user.id]["tag_category"],@@repo[@@user.id]["tags"])
+    end
+
+    
+    def self.manual_tagging(user, tag_cate, tags)
+        puts @@repo
+
+        # persist
+        WeiboUserManager.tag_user_with_category_and_tags(user, tag_cate, tags, { :is_manual => true, :source =>  @@repo[@@user.id]["source"]})
+
+
+        # clean
+        @@repo.delete @@user.id
+    end
+end
+
+
+
+
+
+
+# IDEA: because there are many ways of categorizing data, think the tagging process of 'text' way of categorying data. 
+#    (AFM: research paper to support the tagging behavior and practice".  
+#    Besides the tagging, another way of categorizing data is to have some kind of manager or artificial library do the 
+#    booking keeping of all data(it goods at aggregating data, but may not be versatile to deal with changes).
+class AutoTaggingBot
     JOB_CATEGORY = "jobs"
     
     # IDEA: actually user's data or user's status update can be 
     # for simple demo, we only check the description in user's data.
     def self.tag_user_jobs_with_jobname(user, jobname)
-        if user.screen_name.include? "#{jobname}"
-            target_user = WeiboUser.find user.id
-            puts  target_user.nil? ? "YES " : "NO"
-            if  target_user.nil?
-                puts "[INFO] Going to persistent user to local db"
-                remote_user = $client.user_show user.id
-                target_user = WeiboUser.new( JSON.parse(remote_user.data.to_json) )
-                
-                # add one TagCategory
-                category = TagCategory.new( :name =>JOB_CATEGORY)                
-                # add one TagInfo
-                tag = TagInfo.new(:name => jobname, :source => "user data description." )        
-                # assembly
-                category.tag_infos << tag
-                target_user.tag_categories << category
-                target_user.save!
-                
-            else  # user exists
-                # see if has job category
-                puts "[INFO] User is already in the database local db"
-                cate = target_user.tag_categories.where(:name => JOB_CATEGORY)
-                
-                if cate.nil?
-                    cate = TagCategory.new( :name =>JOB_CATEGORY)
-                    target_user.tag_categories << cate
-                end
-                
-                tag = cate.tag_infos.where( :name => jobname)
-                if tag.nil?
-                    cate.tag_infos << tag
-                else
-                    puts "[INFO] #{tag.name} has been added already!"
-                end
-                
-                target_user.save!
-            end
+        if user.description.include? "#{jobname}"
+            puts user.screen_name
+    
+            
+            
             puts "[INFO] Tagging job #{jobname} in th for user '#{user.screen_name}' (id:#{user.id})"
             $COUNT += 1
         else
             puts "[INFO] Not found job #{jobname} in the description of user '#{user.screen_name}' (id:#{user.id})"
         end
     end
-    
+end
+
+
+# Sometimes, information is not very direct until two or more attributes are input ( a femail,  has offspring's pictures) is a mother, so more information could be extracted, like parenting, way of doing things, her data input and life stream(if in a 3D game, we can simulate that.)
+class KnowledgeableBot
     
     
 end
 
+class AutoTellingBot
+    def self.find_weibousers_with_jobname(jobname)
+        users = []
+        query = WeiboUser.where( "tag_categories.tag_infos.name" => jobname)
+        query.each do | u |
+            users << u
+        end
+        puts users.inspect
+    end
+end
+
+# search for douban or dianping and other 
+class CrossSnsAgent
+    
+end
 
 
 Mongoid.configure do |config|
@@ -223,6 +376,57 @@ end
 
 
 if __FILE__ == $0
+    
+    
+    ManualTagger.ask_for_user_to_be_tagged
+    
+    # Try to extract more information from one person, should leaving interface for future incoming data of interest.
+    # NOTE: usually this kind of information is manually produced from human intervention for notes on viewing images (we can deduce a user's has child from images)
+    
+    
+    
+    
+    # persons of interest, search path:
+    # ==> current user location  ( GIS module )
+    #     Q: how for a local script?  A:
+    # ==> landmarks ( GIS module )
+    #     Q: how for a local script?  A:
+    # ==> organization with landmark address (Organization cateogorying, )
+    # 
+    # ==> 
+    # ==> close path ( Result evaluting)
+    
+    
+    
+    
+    
+    
+    # make fun of people in "Beijing Hai Dian"
+    
+    
+    # Goal: map out the innovation parks in very major city, try to be automatic!
+    
+    
+    # Goal: seeking the most power persons among fans of the weibo user  
+    # EXP:  I think it will be great if the process(selecting, filtering, etc) is recorded and the input and output result is judge.
+    # sth. like   target "find potential leader"  do ;   ;end
+    
+    
+    # Goal: tapping into the gossips among university students
+    
+    
+    # Goal: find the offspring of people in power
+    
+    
+    # TODO: indexing/cataloguing the products and organizations
+    
+    
+    # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
+    
+    
+    
+    
+=begin    
     #user = $client.user_show_by_screen_name("realalien")
     #find_bifriends_geo_distribution(user.id)
     
@@ -230,19 +434,21 @@ if __FILE__ == $0
     puts user.description
     users = $client.friends(user.id)
     
-    jobname = "CSDN"
+    jobname = "CEO"
     
     #AutoTaggingBot.tag_user_jobs_with_jobname(user, jobname)
+    #while users.next_page? #Loops untill end of collection
+    #    users.each do | user|
+    #       AutoTaggingBot.tag_user_jobs_with_jobname(user, jobname)
+    #    end
+    #end
     
-        while users.next_page? #Loops untill end of collection
-            users.each do | user|
-                AutoTaggingBot.tag_user_jobs_with_jobname(user, jobname)
-            end
-        end
+    AutoTellingBot.find_weibousers_with_jobname "CEO"
     
     puts "Total number of people whose jobname contains #{jobname} and in friendship with #{user.name}(id: #{user.id})"
     puts $COUNT
-
+=end
+ 
 =begin    
     # persistent test
     user = $client.user_show_by_screen_name("realalien")

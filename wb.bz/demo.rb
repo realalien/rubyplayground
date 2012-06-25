@@ -7,7 +7,7 @@ require 'open-uri'
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djD44f3867e5cQXw5fB"
+access_token = "2.00oO1cSBga_djD3869a04c440zK6ma"
 $client = Grizzly::Client.new(access_token)
 
 
@@ -167,6 +167,7 @@ class WeiboUserManager
             remote_user = $client.user_show user.id  # TODO: seem already a valid weibo user here.
             target_user = WeiboUser.new( JSON.parse(remote_user.data.to_json) )
             
+            puts target_user.inspect
             # add one TagCategory
             category = TagCategory.new( :name => category_name)                
             # add one TagInfo
@@ -177,6 +178,7 @@ class WeiboUserManager
                 category.tag_infos << tag
             end
             
+            puts category.inspect
             target_user.tag_categories << category
             target_user.save!
             puts target_user.inspect

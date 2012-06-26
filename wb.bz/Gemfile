@@ -1,4 +1,4 @@
-gem "grizzly-weibo", :path => "/Users/dhs/zjc/playground/ra_grizzly"
+#gem "grizzly-weibo", :path => "/Users/dhs/zjc/playground/ra_grizzly"
 gem "mongoid"
 #gem "grizzly-weibo", :require => "grizzly"
 

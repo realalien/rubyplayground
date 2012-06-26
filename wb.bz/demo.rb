@@ -260,7 +260,7 @@ class ManualTagger
                 return  # more than we can/will handle
             end
         ensure 
-            return
+            #return
         end
     end
     

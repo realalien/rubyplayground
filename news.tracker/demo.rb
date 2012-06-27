@@ -100,13 +100,37 @@ class String
     def has_date?
         # note: (((\d+|今)年)*(\d+(月份|月))(\d+日)*    # month is only required
         # note: ((\d+|今)年)   # only year is presented
-        if self.scan(/((\d+|今|去|明)年)|(((\d+|今|去|明)年)*(\d+(月份|月))(\d+日)*|目前|年初|年底|年末|月初|月末)/).size > 0  
+        if self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|目前|年初|年底|年末|月初|月末/).size > 0
            return true
         else
            return false
        end
     end
     
+
+    def date_record
+        # note: (((\d+|今)年)*(\d+(月份|月))(\d+日)*    # month is only required
+        # note: ((\d+|今)年)   # only year is presented
+        r = self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|目前|年初|年底|年末|月初|月末/)
+		#puts r.inspect
+		# TODO: for the moment, the date elements are scattered among match groups, we need to collect them all
+		if r.size > 0
+		    date_mentions = []	
+			r.each do | e |
+				if e.is_a? Array
+					date_mentions << e.compact.join("")
+				elsif e.is_a? String
+					date_mentions << e
+				else
+					# we don't accept, Q: could regex has deeper grouping?
+				end
+			end
+			return date_mentions.flatten.join(",")
+        else
+           return ""
+       end
+    end
+
     # this can help to filter a lot of numbers which stands for months/number-counts/...
     def has_large_money_numbers?
         if self.scan(/(?:(?!0)\d+|0)(?:\.\d+)?(多)*(亿|千万|百万|十万|万)/).size > 0  # units usually mainly appeared in printable newspaper. Q:how to put array in a regex?  A:
@@ -213,7 +237,10 @@ if __FILE__ == $0
     full_qualified = []
     date_with_ratio = []
     only_date = []
-    
+
+	recoverable = []   # contains the original sentences    
+    recovered = []     # contains the original sentences with date appended.
+
     items = content.split("。")
     puts items
     items.each do | sentence |
@@ -235,30 +262,73 @@ if __FILE__ == $0
         end
     end
     
+  
+    # Infer date from previous sentence
+	excepts = (all_numbers - full_qualified - date_with_ratio - only_date)
+    excepts.each do | e|
+		e_idx = items.find_index e
+		puts "e_idx  --->  #{e_idx}"
+		
+		# search previous sentences until it find a date
+		search_idx = e_idx - 1
+		while search_idx >= 0  
+			prev = items[search_idx]
+			puts "prev  ---->  #{prev}"
+			date = prev.date_record		
+			if !date.nil? or !date.empty?
+				modified = e + "[上文提到时间:#{date}]"
+				puts "modified  ----> #{modified}"	
+				if e.has_large_money_numbers?
+					recovered << modified
+					recoverable << e
+					break  # stop search
+				end
+			end
+			search_idx -= 1
+		end
+	end
+
+    
     #puts "---------   all sentence with number: #{all_numbers.size} --------"
     #all_numbers.each do |s|
     #   puts "---> #{s}"  
     #end
-  
-    puts "---------   all sentence full_qualified: #{full_qualified.size} --------"
+
+	puts "---------   all sentence full_qualified: #{full_qualified.size} --------"
     full_qualified.each do |s|
         puts "---> #{s}"  
+		puts "    date mentioned: #{s.date_record}"
     end
     
     puts "---------   all sentence date_with_ratio only: #{date_with_ratio.size} --------"
     date_with_ratio.each do |s|
         puts "---> #{s}"  
+		puts "    date mentioned: #{s.date_record}"
     end
     
     puts "---------   all sentence date only: #{only_date.size} --------"
     only_date.each do |s|
         puts "---> #{s}"  
+		puts "    date mentioned: #{s.date_record}"
+    end
+	
+    puts "---------   all sentence recovable #{recoverable.size} --------"
+    recoverable.each_with_index do |s, idx|
+        puts "---> #{s}"  
+		puts "     #{recovered[idx]}"
     end
 
+
     puts "---------------------------------------------------------------- exceptional: "
-    (all_numbers - full_qualified - date_with_ratio - only_date).each do |s|
-        puts "---> #{s}"  
+    a = (all_numbers - full_qualified - date_with_ratio - only_date - recoverable)
+	if a.size == 0
+		puts "Thanks God! There is none!"
+	else
+		a.each do |s|
+        	puts "---> #{s}"  
+		end
     end
+
     # TODO: some missing info might be mentioned in difference sentences of the same paragraph, if number related info is missing, try to deduce from the context.
     
     # NOTE: after parsing some data, it looks like some data is intentionally used for camouflage for naive readers! To find evidences of evil writer, we can check if the writer is devoted to some kind of topic or some conflict of interests.

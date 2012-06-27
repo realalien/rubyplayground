@@ -81,28 +81,93 @@ end
 
 
 
+
+# Note: here we assume that a string is a well formatted full sentence, ending with a period
+#       so it will be easier to parse for the money numbers, ratios and other useful numbers.
 class String
     
-    # units usually mainly appeared in printable newspaper.
-    CHN_LARGE_NUMBER_UNITS_SHORT = ["亿","千万","百万","十万","万"];
+    # Find out any number, whether it is a fraction or an integer, no matter if it is a pertage or a number value
+    def has_number?
+        if self.scan(/[+-]?(?:(?!0)\d+|0)(?:\.\d+)?/).size > 0  # regex, REF. http://rubular.com/r/OFBdEv0VeP
+            return true
+        else
+            return false
+        end
+    end
     
-    def has_numbers
-        return true if self =~ /\d+/
-        return false    
+    
+    # NOTE: should we convert all chinese numbers to numeric number?
+    def has_date?
+        # note: (((\d+|今)年)*(\d+(月份|月))(\d+日)*    # month is only required
+        # note: ((\d+|今)年)   # only year is presented
+        if self.scan(/((\d+|今|去|明)年)|(((\d+|今|去|明)年)*(\d+(月份|月))(\d+日)*|目前|年初|年底|年末|月初|月末)/).size > 0  
+           return true
+        else
+           return false
+       end
     end
     
     # this can help to filter a lot of numbers which stands for months/number-counts/...
-    def has_large_money_numbers
-       
+    def has_large_money_numbers?
+        if self.scan(/(?:(?!0)\d+|0)(?:\.\d+)?(多)*(亿|千万|百万|十万|万)/).size > 0  # units usually mainly appeared in printable newspaper. Q:how to put array in a regex?  A:
+            return true 
+        else
+            return false
+        end
     end
     
     
     # array of numbers(with units)
-    def money_numbers
+    def large_money_numbers
+        return self.scan(/(?:(?!0)\d+|0)(?:\.\d+)?(多)*(亿|千万|百万|十万|万)/)
+    end
+    
+    
+    # Find the percentage ratio
+    
+    def has_ratio_numbers?
+        # fraction number with digit is like (?:(?!0)\d+|0)(?:\.\d+)?
+        if self.scan(/((?:(?!0)\d+|0)(?:\.\d+)?%|(?:(?!0)\d+|0)(?:\.\d+)?:(?:(?!0)\d+|0)(?:\.\d+)?)/).size > 0  # units usually mainly appeared in printable newspaper. Q:how to put array in a regex?  A:
+            return true 
+        else
+            return false
+        end
+    end
+    
+    # Check if the ration number is roughly calculated.
+    def is_ratio_numbers_rough?
+        if self.scan(/(近|将近|大约|约)(?:(?!0)\d+|0)(?:\.\d+)?%/).size > 0  # units usually mainly appeared in printable newspaper. Q:how to put array in a regex?  A:
+            return true 
+        else
+            return false
+        end
+    end
+    
+    # Find out if it's a month-to-month or year-to-year growth
+    def growth_type
+        a = self.scan(/(同比|环比)/)  # NOTE:TODO: non-formal hacking. it may not correct
+       if a.size > 0
+           return a[0]
+       else
+           return ""
+       end
+    end
+    
+    # Guess what industry the number is related to.
+    # TODO: industry based on the sentence may not be correct, should use article context.
+    def industry
+        # ref. http://www.360doc.com/content/11/0319/04/2739067_102464261.shtml
+        a = self.scan(/铁路运输|钢铁|港口运输|煤炭|电力能源|农林牧渔|机械|科技|有色金属|中小板|建筑|医药|酒店旅游|农药化肥|食品加工|通信|造酒|电力设备|电子信息|商业百货|家电|航天|石油化工|房地产|金融|证券|保险/)  # NOTE:TODO: non-formal hacking.
+        if a.size > 0
+            return a[0]
+        else
+            return ""
+        end
         
-        
-    end    
+    end
 end
+                         
+                         
 
 if __FILE__ == $0
     
@@ -124,20 +189,89 @@ if __FILE__ == $0
 
     # sentence data extract exp.
     # NOTE: if not parsable by machine, we should create tools for collect info and help to analysis the number
-    s = "11亿，这是今年1-4月份全国70余家大中型钢铁企业利润总额。256亿，这是这些钢厂同期的贷款利率、“贷款顾问费”、水利建设基金等各种财务费用总额，财务费用同比上涨将近40%"
+    s = "11亿，这是今年1-4月份全国70余家大中型钢铁企业利润总额，环比增长20%。256亿，这是这些钢厂同期的贷款利率、“贷款顾问费”、水利建设基金等各种财务费用总额，财务费用同比上涨将近40%"
+    # s: note:  acutally, this piece of info is finance related, the expenditure is about different sub industries.
+    
     # NOTE: because some detailed data is not obvious to all, we can only piece together the discreet data, so, please don't try to build a model from bottom up, it may be impossible.
     
     # HAHA: we can seperate the sentence by periods, each sentence can be archived with a lot of meta data, once the data is enough for analysis, we can hack into it( search and aggregate). We can also use other authentic news agents.
     
     # TODO: retrieve several month's data from eeo(or others if data is not sufficient enough) to parse the data for an industry.
     
-    
+=begin      
     items = s.split("。")
     puts items
     items.each do | sentence |
-        
-    end 
+        puts sentence.industry.inspect
+    end
+=end 
+  
+    page = retrieve_content("http://www.eeo.com.cn/2012/0622/228773.shtml")
+    title, content = eeo_title_and_content(page)
     
+    all_numbers = []
+    full_qualified = []
+    date_with_ratio = []
+    only_date = []
+    
+    items = content.split("。")
+    puts items
+    items.each do | sentence |
+        sentence = sentence.strip
+        if  sentence.has_number?
+            all_numbers << sentence
+        end
+        
+        if sentence.has_date? && sentence.has_large_money_numbers?
+           full_qualified << sentence 
+        end
+        
+        if sentence.has_date? && sentence.has_ratio_numbers? && !sentence.has_large_money_numbers?  
+            date_with_ratio << sentence
+        end
+        
+        if sentence.has_date? && !sentence.has_ratio_numbers? && !sentence.has_large_money_numbers? 
+            only_date << sentence
+        end
+    end
+    
+    #puts "---------   all sentence with number: #{all_numbers.size} --------"
+    #all_numbers.each do |s|
+    #   puts "---> #{s}"  
+    #end
+  
+    puts "---------   all sentence full_qualified: #{full_qualified.size} --------"
+    full_qualified.each do |s|
+        puts "---> #{s}"  
+    end
+    
+    puts "---------   all sentence date_with_ratio only: #{date_with_ratio.size} --------"
+    date_with_ratio.each do |s|
+        puts "---> #{s}"  
+    end
+    
+    puts "---------   all sentence date only: #{only_date.size} --------"
+    only_date.each do |s|
+        puts "---> #{s}"  
+    end
+
+    puts "---------------------------------------------------------------- exceptional: "
+    (all_numbers - full_qualified - date_with_ratio - only_date).each do |s|
+        puts "---> #{s}"  
+    end
+    # TODO: some missing info might be mentioned in difference sentences of the same paragraph, if number related info is missing, try to deduce from the context.
+    
+    # NOTE: after parsing some data, it looks like some data is intentionally used for camouflage for naive readers! To find evidences of evil writer, we can check if the writer is devoted to some kind of topic or some conflict of interests.
+    
+    
+    # TODO: there are much more combination of chinese number in sentence, make a comparison tool to collect the sentences those are filtered out, make the judgement knowledge materialized.
+    
+    
+    
+    #IDEA: the information is just one piece of information, imagine we pull an article using some kind of rope,
+    #     at first we may not know what it(result) will be, by elaborating the metaphor, the class type of the obj
+    #     should be created depending on if we need to persist it, how much the similarity among the information, the usage!
+    #   It's a tempertation to 
     
     #IDEA: the purpose here is to prove that the money is spent unwisely on the major companies.
     

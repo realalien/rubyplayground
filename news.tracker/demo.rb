@@ -100,7 +100,7 @@ class String
     def has_date?
         # note: (((\d+|今)年)*(\d+(月份|月))(\d+日)*    # month is only required
         # note: ((\d+|今)年)   # only year is presented
-        if self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|目前|年初|年底|年末|月初|月末/).size > 0
+        if self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|日前|目前|年初|年底|年末|月初|月末|前一周|本周|下周/).size > 0
            return true
         else
            return false
@@ -111,7 +111,7 @@ class String
     def date_record
         # note: (((\d+|今)年)*(\d+(月份|月))(\d+日)*    # month is only required
         # note: ((\d+|今)年)   # only year is presented
-        r = self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|目前|年初|年底|年末|月初|月末/)
+        r = self.scan(/(\d+年|今年|去年|明年)*(\d+月份|\d+月)(\d+日|上旬|中旬|下旬)*|(\d+年|今年|去年|明年)|日前|目前|年初|年底|年末|月初|月末|前一周|本周|下周/)
 		#puts r.inspect
 		# TODO: for the moment, the date elements are scattered among match groups, we need to collect them all
 		if r.size > 0
@@ -229,8 +229,15 @@ if __FILE__ == $0
         puts sentence.industry.inspect
     end
 =end 
-  
-    page = retrieve_content("http://www.eeo.com.cn/2012/0622/228773.shtml")
+	
+
+	# link = "http://www.eeo.com.cn/2012/0622/228773.shtml"
+	#link = "http://www.eeo.com.cn/2012/0627/228943.shtml"  
+    #link = "http://www.eeo.com.cn/2012/0312/222544.shtml"
+	link = "http://www.eeo.com.cn/2012/0625/228783.shtml"
+
+
+    page = retrieve_content(link)
     title, content = eeo_title_and_content(page)
     
     all_numbers = []
@@ -242,7 +249,8 @@ if __FILE__ == $0
     recovered = []     # contains the original sentences with date appended.
 
     items = content.split("。")
-    puts items
+	items = items.collect { |e| e.strip; e.gsub(/\s+/, "") }
+    #puts items
     items.each do | sentence |
         sentence = sentence.strip
         if  sentence.has_number?
@@ -262,30 +270,33 @@ if __FILE__ == $0
         end
     end
     
-  
     # Infer date from previous sentence
 	excepts = (all_numbers - full_qualified - date_with_ratio - only_date)
     excepts.each do | e|
+	  #if e.include? "力帆汽车销售有限公司(以下简称“力帆汽车销售”)为解决在公"
 		e_idx = items.find_index e
-		puts "e_idx  --->  #{e_idx}"
-		
+		#puts "e_idx  --->  #{e_idx}"
+		#puts "e_idx.class --->  #{e_idx.class}"
+		search_idx = 0	
 		# search previous sentences until it find a date
-		search_idx = e_idx - 1
+		search_idx = e_idx - 1 unless e_idx.nil?
 		while search_idx >= 0  
 			prev = items[search_idx]
-			puts "prev  ---->  #{prev}"
+			#puts "search: #{search_idx}, prev  ---->  #{prev}"
 			date = prev.date_record		
-			if !date.nil? or !date.empty?
+			if !date.nil? && !date.empty?
 				modified = e + "[上文提到时间:#{date}]"
-				puts "modified  ----> #{modified}"	
+				#puts "Find date:  modified  ----> #{modified}"	
 				if e.has_large_money_numbers?
 					recovered << modified
 					recoverable << e
-					break  # stop search
+					# stop search
 				end
+				break
 			end
 			search_idx -= 1
 		end
+      #end
 	end
 
     

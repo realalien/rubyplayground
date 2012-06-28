@@ -7,7 +7,7 @@ require 'open-uri'
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djD3869a04c440zK6ma"
+access_token = "2.00oO1cSBga_djD5bf2e642650N_6pw"
 $client = Grizzly::Client.new(access_token)
 
 
@@ -369,6 +369,16 @@ class CrossSnsAgent
 end
 
 
+class KnowMoreAbout
+    
+    def self.organization_circles
+        # NOTE: if the organization is not specified personally, there are many ways to infer the information from many related data, it's a problem of probablity of correctness or depth of personal openness. Think it as  circles.
+        
+        
+    end
+    
+end 
+
 Mongoid.configure do |config|
     name = "mongoid_weibo_dev"
     host = "localhost"
@@ -380,7 +390,8 @@ end
 if __FILE__ == $0
     
     
-    ManualTagger.ask_for_user_to_be_tagged
+    # EXP: Tagging Test
+    #ManualTagger.ask_for_user_to_be_tagged
     
     # Try to extract more information from one person, should leaving interface for future incoming data of interest.
     # NOTE: usually this kind of information is manually produced from human intervention for notes on viewing images (we can deduce a user's has child from images)
@@ -426,6 +437,9 @@ if __FILE__ == $0
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     
+    
+    #user = $client.user_show_by_screen_name("flyerlemon")
+    #find_bifriends_geo_distribution(user.id)
     
     
 =begin    

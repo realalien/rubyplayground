@@ -376,6 +376,12 @@ class KnowMoreAbout
         
         
     end
+
+
+    def self.is_serious
+        puts "#{users.comments_distribution_on_a_weibo_account_graphically}" # best case, worst case. random comment?
+        return 
+    end
     
 end 
 

@@ -7,7 +7,7 @@ require 'open-uri'
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djD5bf2e642650N_6pw"
+access_token = "2.00oO1cSBga_djDe74ee7f33d8wOrSB"
 $client = Grizzly::Client.new(access_token)
 
 
@@ -489,6 +489,24 @@ if __FILE__ == $0
     u1.save!
 =end
     
+    
+    
+    
+    # ----------------------------------------------------------------------
+    user = $client.user_show_by_screen_name("何帆")
+    #puts user.inspect
+    puts user.status.class
+    
+    comments = $client.comments(user.status.id)
+    puts comments.inspect
+    
+    while comments.next_page? #Loops untill end of collection
+        comments.each do | comm |
+            puts comm.inspect
+        end
+    end 
+    
+    puts comments.total_items
     
  
 end

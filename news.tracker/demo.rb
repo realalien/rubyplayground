@@ -234,7 +234,7 @@ if __FILE__ == $0
 	# link = "http://www.eeo.com.cn/2012/0622/228773.shtml"
 	#link = "http://www.eeo.com.cn/2012/0627/228943.shtml"  
     #link = "http://www.eeo.com.cn/2012/0312/222544.shtml"
-	link = "http://www.eeo.com.cn/2012/0625/228783.shtml"
+	link = "http://www.eeo.com.cn/2012/0630/229200.shtml"
 
 
     page = retrieve_content(link)

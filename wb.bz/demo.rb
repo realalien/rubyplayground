@@ -371,7 +371,7 @@ end
 
 class KnowMoreAbout
     
-    def self.organization_circles
+    def self.organization_circles(user)
         # NOTE: if the organization is not specified personally, there are many ways to infer the information from many related data, it's a problem of probablity of correctness or depth of personal openness. Think it as  circles.
         
         

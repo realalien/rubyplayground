@@ -4,6 +4,8 @@ require 'grizzly'
 require 'mongoid'
 require 'open-uri'
 require 'httparty'
+require 'nokogiri'
+
 # note: couple with the server side to persistence some information to cut down the number of api requests
 
 
@@ -110,12 +112,22 @@ end
 def find_bifriends_geo_distribution(user_id)
     
     geo_dist = {}
+    gender_dist = {}
     if user_id.is_a? Numeric   # allow a single user id
         friends = $client.bilateral_friends(user_id)
         
         while friends.next_page? #Loops untill end of collection
             friends.each do |friend|
-                #... # Loops 50 times
+                
+                # gender categorization
+                # NOTE: a female accout will soon get a lot of popularity just with some sexy photos, watch out for those evidences.
+                if gender_dist[friend.gender].nil?
+                    gender_dist[friend.gender] = 1
+                else
+                   gender_dist[friend.gender] += 1
+                end
+                
+                # province/city categorization
                 if  not friend.province.empty? and not friend.city.empty?
                     if geo_dist[friend.province+":"+friend.city].nil?
                         geo_dist[friend.province+":"+friend.city] = 1
@@ -168,15 +180,27 @@ def find_bifriends_geo_distribution(user_id)
     sorted_provices_bi_count_CHN = sorted_provices_bi_count.collect {|m| [ province_name(m[0].to_i) , m[1] ] }
     
     puts "For weibo user #{poi_user.name}  total: Bi-lateral friends #{friends.total_items}"
+    puts "RECORD: #{province_city_name( poi_user.province, poi_user.city)}  "
     puts "Bilateral friends count by city: #{geo_dist_CHN}"  # geo_dist
     puts "Bilateral friends count by province: #{sorted_provices_bi_count_CHN}"  # sorted_provices_bi_count
     puts "------------------------"
-    puts "Q: if user location is among his/her bilateral frineds'"
-    puts "inSameCity  ... #{inSameCity}"
+    puts "CALCULATED: if user location is among his/her bilateral frineds'"
+    puts "inSameCity(or same area, for direct gov cities) ... #{inSameCity}"
     puts "inSameProvince  ... #{inSameProvince}"
     he_or_she = poi_user.gender == 'm'? 'He ': 'She '
     his_or_her = poi_user.gender == 'm'? 'his ': 'her '
     puts "A: So ... #{he_or_she} is #{(inSameCity || inSameProvince) ? '': 'not '} among #{his_or_her} bilateral friends ."
+    puts "------------------------"
+    puts "Gender distribution"
+    
+    #puts gender_dist.inspect
+    #puts gender_dist.values.inspect
+    sum = gender_dist.values.inject{|sum,x| sum + x }
+    puts "Total #{sum}  people with gender. Actuall there are #{friends.total_items} people!"
+    gender_dist.each_pair do | k, v|
+        puts "#{k}, #{v}  ratio: #{'%.2f' % (v.to_f / sum.to_f)}"
+    end
+    #IDEA: if we can draw a map to highlight those dots, it will be clear gender difference among provinces.
     puts "------------------------"
 end
 
@@ -520,8 +544,8 @@ if __FILE__ == $0
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     # find_bifriends_geo_distribution
-    user = $client.user_show_by_screen_name("flyerlemon")
-    find_bifriends_geo_distribution(user.id)
+    # user = $client.user_show_by_screen_name("爆力豆腐")
+    # find_bifriends_geo_distribution(user.id)
     
     # ------------------------------------------
 =begin    
@@ -590,6 +614,53 @@ if __FILE__ == $0
     
     puts comments.total_items
 =end    
+    
+    
+    
+    # ------------------------------------------
+    # TODO: from the source of the status, we can find other services integrated with weibo, if that source has a web site with communities, we can link different account of the same use.
+    # AFM: one piece of info can be treated as a layer of access point, from which more knowledge can be gained.
+    # --> find out all status's source app. group them all.
+    # TODO: it's a waste to regularly pull the data from server, see if we can create a plugable service make following test functions.
+    user = $client.user_show_by_screen_name("realalien")
+    sts = $client.statuses(user.id)
+    
+    sources = []
+    int i = 0
+    while sts.next_page? #Loops untill end of collection
+        sts.each do | s |
+            #puts s.inspect
+            link = Nokogiri::HTML.parse(s.source)
+            sources << link.
+            i++
+            break if i > 5
+        end
+    end 
+    
+    
+    # ------------------------------------------    
+    # find related persons of target organization, confirmed by person's bilateral friends
+    # HINT: the potential hacking could be distill some conversations among people, extract insiders' info., or find more related persons, etc.
+    # PURPOSE: for biz, for education resources and for public sector
+    # NOTE:here we only through weibo's organizations, no other services
+    
+    
+    
+    
+    # IDEA: SYNTHSIZE WITH hackingLBS
+    # i.e. we can estimate the probablity of personal presence in an specific area by find his/her data from Dianping, jiepang or other LBS service which offer public data.
+    
+    
+    
+    
+    # IDEA: SYNTHEISZE WITH news.tracker,
+    # i.e. org in news---> people in weibo groups(of that org, including their roles and other roles missing???)
+    
+    # organizations l
+    
+    
+    # ------------------------------------------ 
+    #  create a theory hypothesis 'upper layers' and test them with different aspects of data.
  
 end
 

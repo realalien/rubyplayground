@@ -3,17 +3,75 @@
 require 'grizzly'
 require 'mongoid'
 require 'open-uri'
+require 'httparty'
 # note: couple with the server side to persistence some information to cut down the number of api requests
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djDe74ee7f33d8wOrSB"
+access_token = "2.00oO1cSBga_djDc546d454ac0qMYKM"
 $client = Grizzly::Client.new(access_token)
 
 
 puts $client  #.methods.sort
 
 $COUNT=0
+
+Mongoid.configure do |config|
+    name = "mongoid_weibo_dev"
+    host = "localhost"
+    port = 27017
+    config.database = Mongo::Connection.new.db(name)
+end
+
+
+# ------------------------# ------------------------# ------------------------
+response = HTTParty.get('http://api.t.sina.com.cn/provinces.json')
+#puts response.body, response.code, response.message, response.headers.inspect
+
+a = JSON.parse(response.body)
+
+# store cities into arrays
+$provinces = a["provinces"]
+#puts $provinces.inspect
+
+def province_name(province_id)
+    province_name = ""
+    city_name = ""
+    
+    province_hashes = $provinces.select { |c| c["id"] == province_id }  # only one
+    #puts province_hashes
+    if province_hashes.size == 1
+        province = province_hashes[0]
+        province_name = province["name"]
+    else
+        # still return the id_code,
+        province_name = province_id.to_s
+    end
+
+    return province_name
+end
+
+def province_city_name(province_id, city_id)
+    province_name = ""
+    city_name = ""
+    
+    province_hashes = $provinces.select { |c| c["id"] == province_id }  # only one
+    #puts province_hashes
+    if province_hashes.size == 1
+        province = province_hashes[0]   # TODO: see if we can cache  this data!!!
+        province_name = province["name"]
+        
+        # see:http://blog.hyfather.com/merging-an-array-of-hashes-in-ruby
+        city_hashes =  Hash[*province["citys"].map(&:to_a).flatten]             
+        #puts city_hashes.inspect
+        city_name = city_hashes["#{city_id}"] || city_id.to_s
+    else
+        # still return the id_code,
+        province_name = province_id.to_s
+    end
+    return "#{province_name}-#{city_name}"
+end
+
 
 # we use id rather than object because  User class may be not pinned to a speicific class.
 def find_friends_geo_distribution(user_id)
@@ -39,9 +97,9 @@ def find_friends_geo_distribution(user_id)
    
     geo_dist = geo_dist.sort_by{|key, value| value}.reverse  
 
-    geo_dist.each do | geo_cnt |
-		puts "#{geo_cnt[0]}  #{geo_cnt[1]}"
-	end
+    #geo_dist.each do | geo_cnt |
+	#	puts "#{geo_cnt[0]}  #{geo_cnt[1]}"
+	#end
     #geo_dist.each_pair do | k,v|
     #    puts "#{k} .... #{v}" 
     #end
@@ -72,14 +130,14 @@ def find_bifriends_geo_distribution(user_id)
     
     geo_dist = geo_dist.sort_by{|key, value| value}.reverse  
     
-    geo_dist.each do | geo_cnt |
-		puts "#{geo_cnt[0]}  #{geo_cnt[1]}"
-	end
+    #geo_dist.each do | geo_cnt |
+	#	puts "#{geo_cnt[0]}  #{geo_cnt[1]}"
+	#end
     #geo_dist.each_pair do | k,v|
     #    puts "#{k} .... #{v}" 
     #end
     poi_user = $client.user_show user_id
-    puts poi_user.inspect
+    #puts poi_user.inspect
     
     # sum of aggregate users by province
     provices_bi_count = {}
@@ -96,14 +154,22 @@ def find_bifriends_geo_distribution(user_id)
     
     
     # Geo Util
-    province_with_most_bifriends, city_with_most_bifriends =  
+    province_with_most_bifriends, city_with_most_bifriends =  geo_dist[0][0].split(":") if geo_dist.size > 0
+    #puts "------> #{province_with_most_bifriends.to_i} #{city_with_most_bifriends.to_i}"
     inSameCity = (poi_user.province.to_i == province_with_most_bifriends && poi_user.city == city_with_most_bifriends ) 
     inSameProvince = (poi_user.province == sorted_provices_bi_count[0][0])
     
     
-    puts "Total:  #{friends.total_items}"
-    puts "Bilateral friends count by city: #{geo_dist}"
-    puts "Bilateral friends count by province: #{sorted_provices_bi_count}"
+    geo_dist_CHN = geo_dist.collect do | m |
+        prov_raw, city_raw = m[0].split(":")
+        ["#{province_city_name(prov_raw.to_i, city_raw.to_i)}", m[1] ]
+    end
+    
+    sorted_provices_bi_count_CHN = sorted_provices_bi_count.collect {|m| [ province_name(m[0].to_i) , m[1] ] }
+    
+    puts "For weibo user #{poi_user.name}  total: Bi-lateral friends #{friends.total_items}"
+    puts "Bilateral friends count by city: #{geo_dist_CHN}"  # geo_dist
+    puts "Bilateral friends count by province: #{sorted_provices_bi_count_CHN}"  # sorted_provices_bi_count
     puts "------------------------"
     puts "Q: if user location is among his/her bilateral frineds'"
     puts "inSameCity  ... #{inSameCity}"
@@ -385,12 +451,6 @@ class KnowMoreAbout
     
 end 
 
-Mongoid.configure do |config|
-    name = "mongoid_weibo_dev"
-    host = "localhost"
-    port = 27017
-    config.database = Mongo::Connection.new.db(name)
-end
 
 
 if __FILE__ == $0
@@ -403,15 +463,11 @@ if __FILE__ == $0
     # TODO: find the efficient way for grouping data based on related models(commentors' sex, geo, jobs, educations ).
      
     # --> get user's status
-    user = $client.user_show_by_screen_name("何帆")
+    #user = $client.user_show_by_screen_name("何帆")
     #puts user.inspect
     #user.status                                # latest status
     #sts = $client.statuses(user.id)             # last few status, a cursor!
     # --> get all comments from one status of the target user
-    
-    puts user.status.inspect
-    
-    all
     
     # ------------------------------------------    
     # EXP: Tagging Test
@@ -463,9 +519,9 @@ if __FILE__ == $0
     # ------------------------------------------
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
-    
-    #user = $client.user_show_by_screen_name("flyerlemon")
-    #find_bifriends_geo_distribution(user.id)
+    # find_bifriends_geo_distribution
+    user = $client.user_show_by_screen_name("flyerlemon")
+    find_bifriends_geo_distribution(user.id)
     
     # ------------------------------------------
 =begin    
@@ -510,9 +566,14 @@ if __FILE__ == $0
     u1.save!
 =end
     
+
+    # ------------------------------------------------- province city data
+    #  province city test
+    #r = province_city_name(31,1000)
+    #puts r.inspect
     
     
-    
+=begin    
     # ----------------------------------------------------------------------
     user = $client.user_show_by_screen_name("何帆")
     #puts user.inspect
@@ -528,7 +589,7 @@ if __FILE__ == $0
     end 
     
     puts comments.total_items
-    
+=end    
  
 end
 

@@ -40,7 +40,7 @@ def retrieve_content(url)
         puts e.message
         puts e.backtrace
         # $ACCUMULATED_DELAY += 1
-        puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+        puts "[WARNING] Compulsory put programme into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
         # sleep $ACCUMULATED_DELAY
         
         # just return an empty Mechanize::Page

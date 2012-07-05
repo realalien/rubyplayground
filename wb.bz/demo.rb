@@ -7,7 +7,7 @@ require 'open-uri'
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djD5bf2e642650N_6pw"
+access_token = "2.00oO1cSBga_djDe74ee7f33d8wOrSB"
 $client = Grizzly::Client.new(access_token)
 
 
@@ -396,15 +396,33 @@ end
 if __FILE__ == $0
     
     
+    # ------------------------------------------   
+    # fun with user comment
+    
+    # group comment by geo
+    # TODO: find the efficient way for grouping data based on related models(commentors' sex, geo, jobs, educations ).
+     
+    # --> get user's status
+    user = $client.user_show_by_screen_name("何帆")
+    #puts user.inspect
+    #user.status                                # latest status
+    #sts = $client.statuses(user.id)             # last few status, a cursor!
+    # --> get all comments from one status of the target user
+    
+    puts user.status.inspect
+    
+    all
+    
+    # ------------------------------------------    
     # EXP: Tagging Test
     #ManualTagger.ask_for_user_to_be_tagged
     
+    
+    # ------------------------------------------
     # Try to extract more information from one person, should leaving interface for future incoming data of interest.
     # NOTE: usually this kind of information is manually produced from human intervention for notes on viewing images (we can deduce a user's has child from images)
     
-    
-    
-    
+    # ------------------------------------------
     # persons of interest, search path:
     # ==> current user location  ( GIS module )
     #     Q: how for a local script?  A:
@@ -419,35 +437,37 @@ if __FILE__ == $0
     
     
     
-    
+    # ------------------------------------------
     # make fun of people in "Beijing Hai Dian"
     
-    
+    # ------------------------------------------
     # Goal: map out the innovation parks in very major city, try to be automatic!
     
-    
+    # ------------------------------------------
     # Goal: seeking the most power persons among fans of the weibo user  
     # EXP:  I think it will be great if the process(selecting, filtering, etc) is recorded and the input and output result is judge.
     # sth. like   target "find potential leader"  do ;   ;end
     
-    
+    # ------------------------------------------
     # Goal: tapping into the gossips among university students
     
     
+    # ------------------------------------------
     # Goal: find the offspring of people in power
     
     
+    # ------------------------------------------
     # TODO: indexing/cataloguing the products and organizations
     
     
+    # ------------------------------------------
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
-    
     
     
     #user = $client.user_show_by_screen_name("flyerlemon")
     #find_bifriends_geo_distribution(user.id)
     
-    
+    # ------------------------------------------
 =begin    
     #user = $client.user_show_by_screen_name("realalien")
     #find_bifriends_geo_distribution(user.id)
@@ -471,6 +491,7 @@ if __FILE__ == $0
     puts $COUNT
 =end
  
+    # ------------------------------------------ Taggable persistence
 =begin    
     # persistent test
     user = $client.user_show_by_screen_name("realalien")
@@ -493,6 +514,8 @@ if __FILE__ == $0
  
 end
 
+
+    # ------------------------------------------
 =begin
 
 # IDEA: how to make it pluggable to allow several permutations of conditions, so machine can also eliminate the possiblilities of idiot-alike guessing!
@@ -509,6 +532,7 @@ hypothesis "user is an advertisement account" do
     
 end
 
+    # ------------------------------------------ 
 # IDEA: it looks like we must separate/generalize the individual intentions by deducing from evidence of behaviors
 hypothesis "user may try to hide default location"  do 
     # IDEA: should pass through following test cases to return yes.

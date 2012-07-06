@@ -1,3 +1,7 @@
+#encoding:UTF-8
+
+require File.join(File.dirname(__FILE__),"../util.d/weibo_client.rb")
+
 # we use id rather than object because  User class may be not pinned to a speicific class.
 def find_friends_geo_distribution(user_id)
     

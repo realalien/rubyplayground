@@ -1,0 +1,4 @@
+# NOTE: for each website, there might be 
+# * a  different page layout for content display,  
+# * a different recommendation system for user specific content (e.g. image sharing website will category by themes, user groups,etc)
+# So, here it is considered insightful if the data is extracted and compared among two or more similar applications.

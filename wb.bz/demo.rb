@@ -1,15 +1,12 @@
 #encoding:UTF-8
 
-require 'grizzly'
 require 'mongoid'
 
-require 'nokogiri'
 
 # note: couple with the server side to persistence some information to cut down the number of api requests
 
 
 # TIP: use web app to get a temporary access token
-access_token = "2.00oO1cSBga_djDc546d454ac0qMYKM"
 $client = Grizzly::Client.new(access_token)
 
 

@@ -1,6 +1,9 @@
 #encoding:UTF-8
 
+
+require 'google_chart'
 require File.join(File.dirname(__FILE__),"../util.d/weibo_client.rb")
+require File.join(File.dirname(__FILE__),"../util.d/weibo_const.rb")
 
 # we use id rather than object because  User class may be not pinned to a speicific class.
 def find_friends_geo_distribution(user_id)
@@ -130,13 +133,53 @@ def find_bifriends_geo_distribution(user_id)
     #IDEA: if we can draw a map to highlight those dots, it will be clear gender difference among provinces.
     puts "------------------------"
 
+    return [gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN]
 end
 
 
 
+if __FILE__ == $0
     # ------------------------------------------
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     # find_bifriends_geo_distribution
-    # user = $client.user_show_by_screen_name("爆力豆腐")
-    # find_bifriends_geo_distribution(user.id)
+    user = $client.user_show_by_screen_name("爆力豆腐")
+    gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN = find_bifriends_geo_distribution(user.id)
+    
+    # Create a pie chart
+    puts "--------------- by Gender :"
+    GoogleChart::PieChart.new('650x350', "Gender", false ) do |pc|
+        
+        gender_dist.each do |gender ,count|
+            pc.data gender =="m"? "男": "女", count
+        end
+        
+        puts pc.to_url
+        
+    end
+
+    puts "--------------- by Province :"
+    # Create a pie chart
+    GoogleChart::PieChart.new('650x350', "Province", false ) do |pc|
+        
+        geo_dist_CHN.each do |loc,count|
+            pc.data loc, count
+        end
+        
+        puts pc.to_url
+        
+    end
+    
+    puts "--------------- by city :"
+    # Create a pie chart
+    GoogleChart::PieChart.new('650x350', "City", false ) do |pc|
+        
+        sorted_provices_bi_count_CHN.each do |loc,count|
+            pc.data loc, count
+        end
+        
+        puts pc.to_url
+        
+    end
+    
+end

@@ -1,29 +1,42 @@
 #encoding:UTF-8
 
-require 'mongoid'
 
+require File.join(File.dirname(__FILE__),"./util.d/weibo_client.rb")
 
 # note: couple with the server side to persistence some information to cut down the number of api requests
 
 
 # TIP: use web app to get a temporary access token
-$client = Grizzly::Client.new(access_token)
+
+# --------------------------------------------
+
+=begin
+# Simplify the api for irb use.
+# NOTE: following http://www.ibm.com/developerworks/opensource/library/os-dataminingrubytwitter/index.html#ruby_tour
+user = $client.user_show_by_screen_name("realalien")
+puts user.location
+puts user.province
+puts $client.friends(user.id).first.name
+
+=end
 
 
-puts $client  #.methods.sort
+# --------------------------------------------
+# Web page crawling for statuses under a topic.
 
-$COUNT=0
+#require File.join(File.dirname(__FILE__),"./util.d/scraper.rb")
 
-Mongoid.configure do |config|
-    name = "mongoid_weibo_dev"
-    host = "localhost"
-    port = 27017
-    config.database = Mongo::Connection.new.db(name)
-end
+#page = retrieve_page()
 
 
 
+# --------------------------------------------
+# find parents who educate their children with music instruments, better if find a teacher!
 
+
+
+
+# --------------------------------------------
 
 # Sometimes, information is not very direct until two or more attributes are input ( a femail,  has offspring's pictures) is a mother, so more information could be extracted, like parenting, way of doing things, her data input and life stream(if in a 3D game, we can simulate that.)
 class KnowledgeableBot

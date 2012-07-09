@@ -9,13 +9,11 @@ require File.join(File.dirname(__FILE__),"../ext.d/friends_ext.rb")
     # TODO: from the source of the status, we can find other services integrated with weibo, if that source has a web site with communities, we can link different account of the same use.
     # AFM: one piece of info can be treated as a layer of access point, from which more knowledge can be gained.
 
- 
-    # >>>>>>>>>> find out all status's source app. group them all.
-    # TODO: it's a waste to regularly pull the data from server, see if we can create a plugable service make following test functions.
 =end 
 
 
-
+# >>>>>>>>>> find out all status's source app. group them all.
+# TODO: it's a waste to regularly pull the data from server, see if we can create a plugable service make following test functions.
 def find_3rd_party_apps(weibo_screen_name)
     user = $client.user_show_by_screen_name(weibo_screen_name) ;#user = $client.user_show 1961488257
     sts = $client.statuses(user.id)
@@ -96,6 +94,7 @@ puts ""
 =begin
   
 # ATTENTION: User requests out of rate limit!  
+ 
 #user = $client.user_show_by_screen_name("realalien")
 user = $client.user_show "1191241142"
 friends = $client.bilateral_friends(user.id)

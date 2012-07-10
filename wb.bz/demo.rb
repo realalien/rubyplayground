@@ -22,11 +22,17 @@ puts $client.friends(user.id).first.name
 
 
 # --------------------------------------------
-# Web page crawling for statuses under a topic.
+# Web page crawling for statuses under a topic. Because the web service is not open and requires contract
 
 #require File.join(File.dirname(__FILE__),"./util.d/scraper.rb")
 
 #page = retrieve_page()
+
+
+
+
+
+
 
 
 

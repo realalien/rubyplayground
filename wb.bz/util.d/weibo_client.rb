@@ -2,6 +2,6 @@
 
 require 'grizzly'
 
-access_token = "2.00oO1cSBga_djD0d3e271cb8_iK42D"
+access_token = "2.00oO1cSBga_djD89c5653896EvdNYC"
 $client = Grizzly::Client.new(access_token)
 

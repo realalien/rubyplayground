@@ -143,9 +143,10 @@ if __FILE__ == $0
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     # find_bifriends_geo_distribution
-    user = $client.user_show_by_screen_name("爆力豆腐")
+    user = $client.user_show "2647476531"
     gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN = find_bifriends_geo_distribution(user.id)
-    
+
+=begin    
     # Create a pie chart
     puts "--------------- by Gender :"
     GoogleChart::PieChart.new('650x350', "Gender", false ) do |pc|
@@ -181,5 +182,5 @@ if __FILE__ == $0
         puts pc.to_url
         
     end
-    
+=end    
 end

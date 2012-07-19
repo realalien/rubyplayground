@@ -82,17 +82,21 @@ CouchPotato::Config.database_name = 'couchdb_mbox_test'
 
 class Stata
   include CouchPotato::Persistence
+
+  property :name
+  property :created_at, :type => 
+
   view :all, :key => :created_at 
 end
 
 
 # ------------------------
 
-
+# NOTE: gem issues, json rails deprecation problems,
 require 'couch_foo'
-class Status < CouchFoo::Base
+#class Status < CouchFoo::Base
 
-end
+#end
 
 if __FILE__ == $0
   
@@ -109,8 +113,8 @@ if __FILE__ == $0
   #db = CouchPotato.database
   #puts db.view(Stata.all)
  
-  ss = Status.all
-  puts ss
+  #ss = Status.all
+  #puts ss
 
  
 end

@@ -27,9 +27,6 @@ end
 # -----------------
 # STEP: extract the news from source and save
 
-$a = Mechanize.new { |agent|
-    agent.user_agent_alias = 'Mac Safari'
-}
 
 #TODO: there are much useful data(e.g. link meta data, probably for SEO, so).
 def retrieve_content(url)
@@ -37,13 +34,13 @@ def retrieve_content(url)
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        page = m.get(url) 
+        page = m.get(url)
     rescue => e 
         puts "[Error] retrieving #{url} "
         puts e.message
         puts e.backtrace
         # $ACCUMULATED_DELAY += 1
-        puts "[WARNING] Compulsory put programme into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+        #puts "[WARNING] Compulsory put programme into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
         # sleep $ACCUMULATED_DELAY
         
         # just return an empty Mechanize::Page
@@ -69,9 +66,9 @@ def eeo_title_and_content(page)
     
     if node_set and node_set.length > 0 
         #puts node_set[0].inner_text
-        return [page.title, node_set[0].inner_text]
+        return [page.title, node_set[0].inner_text, page.body] #TODO: download the reference js or other files.
     else
-        return [nil,nil]
+        return [nil,nil,nil]
     end
 end
 
@@ -244,7 +241,7 @@ if __FILE__ == $0
 
 
     page = retrieve_content(link)
-    title, content = eeo_title_and_content(page)
+    title, content, raw = eeo_title_and_content(page)   # NOTE: raw is not used yet
     
     all_numbers = []
     full_qualified = []

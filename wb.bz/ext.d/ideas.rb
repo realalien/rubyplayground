@@ -6,3 +6,6 @@
 
 
 
+# 2012.07.20
+# Douban users can join a number of groups, the group info. can be used to find the birth place of the user, the colleges he/she attends, the topics/communities joined. If we find the mapping between douban accout and sina weibo account, then the probablity of information accuracy increases!
+

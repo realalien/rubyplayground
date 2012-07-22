@@ -80,7 +80,8 @@ puts graph.edge_count
 # STEPS:  ==> collect tweets from most reposts
           ==> 
  
-
+# Q: what's the graph usage in real world? 
+# A: 
 =end
 
 

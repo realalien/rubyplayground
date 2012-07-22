@@ -114,5 +114,5 @@ end  # of while
 end  # if __FILE__ == $0
 
 # to make the graph into png:  `circo -Tpng -Oxfn_ajaxian xfn_ajaxian.dot`
-# NOTE: use `brew install graphviz' to install graphvis rather than from .pkg which have dylib problems.
+# NOTE: use `sudo port install graphviz' to install graphvis rather than from .pkg or from brew which have linking problems.
 

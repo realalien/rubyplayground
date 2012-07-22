@@ -1,5 +1,6 @@
 #encoding:UTF-8
-require 'mongoid'
+
+#require 'mongoid' # NOTE: it doesn't seem to be a good choice using mongoid for data analysis. what about couchdb?
 require 'mechanize' 
 require File.join(File.dirname(__FILE__), "models.rb") 
 
@@ -13,20 +14,19 @@ require File.join(File.dirname(__FILE__), "models.rb")
 
 # -----------------  setup
 
+=begin
 Mongoid.configure do |config|
     name = "news_tracker_dev"
     host = "localhost"
     port = 27017
     config.database = Mongo::Connection.new.db(name)
 end
+=end
 
 
 # -----------------
 # STEP: extract the news from source and save
 
-$a = Mechanize.new { |agent|
-    agent.user_agent_alias = 'Mac Safari'
-}
 
 #TODO: there are much useful data(e.g. link meta data, probably for SEO, so).
 def retrieve_content(url)
@@ -34,13 +34,13 @@ def retrieve_content(url)
         m = Mechanize.new { |agent|
             agent.user_agent_alias = 'Mac Safari'
         }
-        page = m.get(url) 
+        page = m.get(url)
     rescue => e 
         puts "[Error] retrieving #{url} "
         puts e.message
         puts e.backtrace
         # $ACCUMULATED_DELAY += 1
-        puts "[WARNING] Compulsory put programme into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+        #puts "[WARNING] Compulsory put programme into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
         # sleep $ACCUMULATED_DELAY
         
         # just return an empty Mechanize::Page
@@ -66,9 +66,9 @@ def eeo_title_and_content(page)
     
     if node_set and node_set.length > 0 
         #puts node_set[0].inner_text
-        return [page.title, node_set[0].inner_text]
+        return [page.title, node_set[0].inner_text, page.body] #TODO: download the reference js or other files.
     else
-        return [nil,nil]
+        return [nil,nil,nil]
     end
 end
 
@@ -231,14 +231,16 @@ if __FILE__ == $0
 =end 
 	
 
+=begin 
+    # ----------------   number detection -------------------
+ 
 	# link = "http://www.eeo.com.cn/2012/0622/228773.shtml"
 	#link = "http://www.eeo.com.cn/2012/0627/228943.shtml"  
     #link = "http://www.eeo.com.cn/2012/0312/222544.shtml"
-	link = "http://www.eeo.com.cn/2012/0714/229996.shtml"
 
 
     page = retrieve_content(link)
-    title, content = eeo_title_and_content(page)
+    title, content, raw = eeo_title_and_content(page)   # NOTE: raw is not used yet
     
     all_numbers = []
     full_qualified = []
@@ -305,6 +307,9 @@ if __FILE__ == $0
     #   puts "---> #{s}"  
     #end
 
+ 
+    #  ------------ visualization with google wdiget
+ 
 	puts "---------   all sentence full_qualified: #{full_qualified.size} --------"
     full_qualified.each do |s|
         puts "---> #{s}"  
@@ -340,6 +345,16 @@ if __FILE__ == $0
 		end
     end
 
+=end
+    
+    
+    # ------ storage --------
+    
+    
+    
+    
+    
+    
     # TODO: some missing info might be mentioned in difference sentences of the same paragraph, if number related info is missing, try to deduce from the context.
     
     # NOTE: after parsing some data, it looks like some data is intentionally used for camouflage for naive readers! To find evidences of evil writer, we can check if the writer is devoted to some kind of topic or some conflict of interests.
@@ -359,6 +374,10 @@ if __FILE__ == $0
     
     
 end
+
+
+
+
 
 
 

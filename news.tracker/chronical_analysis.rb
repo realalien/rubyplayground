@@ -64,7 +64,7 @@ class NewsPiece
   
   
   # VIEW for search , Q: do I have use lucene to search data indexing and keyword search? A: 
-  view :all, :key => link
+  view :all, :key => [:news_agent_name, :]
   
   
 end

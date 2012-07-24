@@ -44,9 +44,8 @@ def find_bifriends_geo_distribution(user_id)
     geo_dist = {}
     gender_dist = {}
     if user_id.is_a? Numeric   # allow a single user id
-        #friends = $client.bilateral_friends(user_id)
-         
-        friends = $client.friends(user_id)
+        friends = $client.bilateral_friends(user_id)
+        #friends = $client.friends(user_id)
 
         while friends.next_page? #Loops untill end of collection
             friends.each do |friend|
@@ -145,7 +144,7 @@ if __FILE__ == $0
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     # find_bifriends_geo_distribution
-    user = $client.user_show_by_screen_name "锅锅大仙"
+    user = $client.user_show_by_screen_name "兔主席"
     gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN = find_bifriends_geo_distribution(user.id)
 
 =begin    

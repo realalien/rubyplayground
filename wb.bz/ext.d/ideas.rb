@@ -18,3 +18,14 @@
 # But remember, school teachers should have information agents(delegate who manage the information distribution), so the solution should create a reasonable income for them to support this kind of eco-sys!
 
 
+# Detect short url in status update
+# 2012.07.24 user http://weibo.com/beijingcalling is potentially a worker in financial industry, although there are many tweets about music, but at least there is a some links pointing to the 
+# Also, those chinese tweeters using non-native sources tends to be highly valued to be good info. source and filter or processors!
+
+
+# The friendship of others
+# 2012.07.24 user http://weibo.com/jinrongxue posted one tweet about newly added frienship link for person liu chuan zhi, this tweet means friendship of celebrity are also monitored, probably use celebrity as info filter, nice idea!
+# TODO: this can serves as peripheral collectors who do the tracking of people of my interst!
+
+
+

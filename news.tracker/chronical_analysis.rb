@@ -2,15 +2,60 @@
 
 require 'mechanize' 
 require 'couch_potato'  # because we can write view(design doc) in ruby.
-
+require 'mongoid'
 
 # ----- General Ideas ------
 # STEP: collect many of news for one of the industries from one or more authentic/credible news agents, store them in a nosql db for analysis. (  should search tagged/analysed values, raw data is only for referencing, )
 # STEP: find the numbers(in the context) have chronical series, and construct a table for graphing, compare with other research
 
+# NOTE: 
+# * after several web searches and examples in "Mining The Social Web", I assume that the data will be collected and stored in mongoid, for the reason that it's easier for query. But for data analysis, couchdb might be used in that a lot of existing demo can be reused like those on the book mentioned before.
+
+# -------------------------------------------------------------
+
+Mongoid.configure do |config|
+    name = "news_tracker_dev"
+    host = "localhost"
+    port = 27017
+    config.database = Mongo::Connection.new.db(name)
+end
+
+
+class NewsArticle
+    
+    include Mongoid::Document 
+    include Mongoid::Timestamps::Created
+    
+    field :title, type: String  # 标题
+    field :content, type: String  # 文章或网页内容（尽量剔除不需要的内容）
+    field :raw_page, type: String  # 原始页面
+    
+    field :news_agent_name  # 新闻机构
+    field :link, type: String   # 链接
+   
+    
+    # VALIDATION
+    validates_uniqueness_of :title, :scope => [:news_agent_name]  # 同一个机构不收录同名文章(避免重复录入) TODO: potential bug, should include aricle publishing date.
+    
+    
+end
+
+
+# supposed to monitor/mgmt a data key 
+class EeoCollector
+    
+end
+
+
+class NumberAnalyser ; end
+class NoteTaker ; end
+
+
+# -------------------------------------------------------------
+#  Experimenting of modeling with Couchdb,
+
 
 CouchPotato::Config.database_name = 'news_track_chronical'
-
 
 =begin
  
@@ -69,7 +114,6 @@ class NewsPiece
   
 end
 
-
 # --------------------------------------------------------------------------------
 
 
@@ -90,11 +134,21 @@ if __FILE__ == $0
   a = NewsPiece.new :title => title, :content => content, :raw_page => raw, :news_agent_name => "eeo", :link => link
   
   CouchPotato.database.save_document a
+ 
+ 
+ 
+ # retrieve test
+ # Q: what if error occurs? A:
 =end
   
   
-  # retrieve test
-  # Q: what if error occurs? A:
+=begin
+  # test of mongodb storage
+ 
+  
+=end
+    
+
   
  
  

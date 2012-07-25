@@ -28,4 +28,7 @@
 # TODO: this can serves as peripheral collectors who do the tracking of people of my interst!
 
 
+#Moral: instead of funding the education for citizens, some gov body put a great sum of money in construction, car manufacturing and unnecessary spending, the project is supposed to hack their system and make them regret deeply!
+
+
 

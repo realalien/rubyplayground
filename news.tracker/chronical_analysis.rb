@@ -67,8 +67,10 @@ class EeoCollector
       begin 
         na = NewsArticle.create! :title=> title, :content=> content, :raw_page => raw, :news_agent_name => "eeo", :link => url_str
         puts "[Info] Data saved!"
-      rescue
-        puts "[Error] failed to save data"
+      rescue  => e
+        puts "[Error] failed to save data, error:"
+        puts e.message
+        puts e.backtrace.join("\n")
       end
     else
       puts "[Error] Failed to insert data of url #{url_str},\ntitle: #{title}\ncontent: #{content}\nraw: #{raw}"
@@ -224,8 +226,11 @@ if __FILE__ == $0
   
   # test of newly added property after some data has been stored.  
   
-  EeoCollector.collect "http://www.eeo.com.cn/2012/0725/230631.shtml"
-  
+  if ARGV.size == 1
+      EeoCollector.collect ARGV[0]
+  else
+     puts "[Usage]ruby chronical_analysis.rb <url>" 
+  end
 end
 
 

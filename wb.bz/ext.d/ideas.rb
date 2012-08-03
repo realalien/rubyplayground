@@ -31,4 +31,8 @@
 #Moral: instead of funding the education for citizens, some gov body put a great sum of money in construction, car manufacturing and unnecessary spending, the project is supposed to hack their system and make them regret deeply!
 
 
+# 2012.08.01
+# collect and make a survey on public opinions on current affairs! e.g. the attitude towards olympics competitions
+
+
 

@@ -45,7 +45,8 @@ def find_bifriends_geo_distribution(user_id)
     gender_dist = {}
     if user_id.is_a? Numeric   # allow a single user id
         friends = $client.bilateral_friends(user_id)
-        
+        #friends = $client.friends(user_id)
+
         while friends.next_page? #Loops untill end of collection
             friends.each do |friend|
                 
@@ -145,7 +146,7 @@ if __FILE__ == $0
     # find_bifriends_geo_distribution
 
 =begin
-    user = $client.user_show_by_screen_name "彭晓芸"
+    user = $client.user_show_by_screen_name "兔主席"
     gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN = find_bifriends_geo_distribution(user.id)
 
     # Create a pie chart

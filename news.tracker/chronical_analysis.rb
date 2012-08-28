@@ -1,16 +1,136 @@
-#encoding: UTF-8
+# encoding: UTF-8
 
 require 'mechanize' 
 require 'couch_potato'  # because we can write view(design doc) in ruby.
-
+require 'mongoid'
 
 # ----- General Ideas ------
 # STEP: collect many of news for one of the industries from one or more authentic/credible news agents, store them in a nosql db for analysis. (  should search tagged/analysed values, raw data is only for referencing, )
 # STEP: find the numbers(in the context) have chronical series, and construct a table for graphing, compare with other research
 
+# NOTE: 
+# * after several web searches and examples in "Mining The Social Web", I assume that the data will be collected and stored in mongoid, for the reason that it's easier for query. But for data analysis, couchdb might be used in that a lot of existing demo can be reused like those on the book mentioned before.
+
+# -------------------------------------------------------------
+
+Mongoid.configure do |config|
+    name = "news_tracker_dev"
+    host = "localhost"
+    port = 27017
+    config.database = Mongo::Connection.new.db(name)
+end
+
+
+class NewsArticle
+    
+    include Mongoid::Document 
+    include Mongoid::Timestamps # adds automagic fields created_at, updated_at
+    
+    field :title, type: String  # 标题
+    field :content, type: String  # 文章或网页内容（尽量剔除不需要的内容）
+    field :raw_page, type: String  # 原始页面
+    
+    field :news_agent_name  # 新闻机构
+    field :link, type: String   # 链接
+   
+    
+    # VALIDATION
+    validates_presence_of :title, :content, :raw_page
+    validates_presence_of :news_agent_name, :link
+    
+    validates_uniqueness_of :title, :scope => [:news_agent_name]  # 同一个机构不收录同名文章(避免重复录入) TODO: potential bug, should include aricle publishing date.
+    validates_inclusion_of :news_agent_name, :in => ['eeo' ] # NOTE: even in dev, sources are limited. # Later, we may register for expression to get the list of values allowed.
+    
+end
+
+
+# supposed to monitor/mgmt a data key 
+class NewsAnalyser
+  
+end
+
+# IDEA: is it possible to create a module to read the source code's annotation to report implementation/design detail, like EeoCollector#describe gives "blah, ..."
+class EeoCollector
+    
+  # retrieve, process and store
+  def self.collect(url_str)
+    page = self.retrieve_content(url_str)
+    if page
+      title, content, raw = self.eeo_title_and_content(page)
+      puts "#{title}\n" ; puts "#{content}\n" ; puts "#{raw}"
+    else
+      puts "[Error] Failed to grab page from url #{url_str}"
+    end
+
+    # TODO: refactor out
+    if title && content && raw  # make sure every thing exists
+      begin 
+        na = NewsArticle.create! :title=> title, :content=> content, :raw_page => raw, :news_agent_name => "eeo", :link => url_str
+        puts "[Info] Data saved!"
+      rescue  => e
+        puts "[Error] failed to save data, error:"
+        puts e.message
+        puts e.backtrace.join("\n")
+      end
+    else
+      puts "[Error] Failed to insert data of url #{url_str},\ntitle: #{title}\ncontent: #{content}\nraw: #{raw}"
+    end
+  end
+
+  #TODO: there are much useful data(e.g. link meta data, probably for SEO, so).
+  def self.retrieve_content(url)
+    begin
+      m = Mechanize.new { |agent| agent.user_agent_alias = 'Mac Safari' }
+      page = m.get(url)
+    rescue => e 
+      puts "[Error] retrieving #{url} "; puts e.message; puts e.backtrace
+      page = nil
+    ensure
+      #puts page.inspect ; #puts page.content
+      return page
+    end
+  end
+
+
+  # process after retrieving the raw page, return raw title and raw content(with html tag)
+  # Q: how to deal with article that of regular updates?
+  # A: 
+  # TODO:  unforseeable page element id change handling
+  def self.eeo_title_and_content(page)
+      xpath = "//div[@id='text_content']"
+      node_set = page.search(xpath)
+      
+      if node_set && node_set.length > 0 
+          #puts node_set[0].inner_text
+          return [page.title, node_set[0].inner_text, page.body] #TODO: download the reference js or other files.
+      else
+          return [nil,nil,nil]
+      end
+  end
+end
+
+
+# -------------------------------------------------------------
+#  Experimenting of modeling with Couchdb,
+
+# This collect serves:
+# * auto detect the title, news content(probably the div element with most text), news_agent_name(probably the 'author' meta info of the page) on arbitrary news source.
+# * persist the logic(e.g. the xpath toward the content)
+class GeneralCollect
+
+end
+
+
+  
+class NumberAnalyser ; end
+class NoteTaker ; end
+
+
+# -------------------------------------------------------------
+#  Experimenting of modeling with Couchdb,
+
 
 CouchPotato::Config.database_name = 'news_track_chronical'
-
 
 =begin
  
@@ -64,17 +184,12 @@ class NewsPiece
   
   
   # VIEW for search , Q: do I have use lucene to search data indexing and keyword search? A: 
-  view :all, :key => link
+  view :all, :key => [:news_agent_name]
   
   
 end
 
-
 # --------------------------------------------------------------------------------
-
-
-require File.join(File.dirname(__FILE__),"eeo_number_collector.rb")
-
 
 
 
@@ -90,17 +205,32 @@ if __FILE__ == $0
   a = NewsPiece.new :title => title, :content => content, :raw_page => raw, :news_agent_name => "eeo", :link => link
   
   CouchPotato.database.save_document a
+ 
+ 
+ 
+ # retrieve test
+ # Q: what if error occurs? A:
 =end
   
   
-  # retrieve test
-  # Q: what if error occurs? A:
+=begin
+  # test of mongodb storage
+ 
+  
+=end
+    
+
   
  
  
   
   # test of newly added property after some data has been stored.  
   
+  if ARGV.size == 1
+      EeoCollector.collect ARGV[0]
+  else
+     puts "[Usage]ruby chronical_analysis.rb <url>" 
+  end
 end
 
 

@@ -144,7 +144,7 @@ if __FILE__ == $0
     # IDEA: each requirement should be able to mapped to an array of attributes ( also help to increase the probability of accuracy), e.g. the 
     
     # find_bifriends_geo_distribution
-    user = $client.user_show_by_screen_name "兔主席"
+    user = $client.user_show_by_screen_name "潜水蛋蛋-"
     gender_dist, geo_dist_CHN, sorted_provices_bi_count_CHN = find_bifriends_geo_distribution(user.id)
 
 =begin    

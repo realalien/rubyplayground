@@ -35,6 +35,54 @@ def query_for_organization(category, area)
 end
 
 
+# ------------------------------
+# General Categoring Data
+# ------------------------------
+def collect_all_city_phone_prefix
+    
+end
+
+
+
+# NOTE: the levels of data is collectable from sitemap, e.g. http://www.ddmap.com/sitemap/25/1.htm (http://www.ddmap.com/sitemap/<city_phone_prefix>/1.htm)
+# NOTE: the city_phone_prefix may be not necessary in collecting categories since every city should has similar data. For now for the simplicity of data retriving and without proper phone prefix dataset, we just assign one city prefix, beginning from one city!
+def collect_place_categories(city_phone_prefix)
+    categories = {}
+    
+    # url
+    city_phone_prefix.gsub!(/^0+/, "") # remove leading zero
+    url = "http://www.ddmap.com/sitemap/#{city_phone_prefix}/1.htm"
+    # xml process
+    doc = Nokogiri::HTML(open(url))
+    css_path = "html body div#body div.siteCon div.siteCon1"
+    
+    # search for list of 'ul' under above css_path
+    doc.at_css(css_path).children.each do | ul |
+        # first 'li' is 1st level category
+        first_cat = ul.at_xpath("li[@class='Con1']/a")
+        first_cat.children.each do  |link |
+            puts URI.unescape(link.content)
+        end
+        # second 'li' are list of 2nd level category, contained in all the links wrapped in <p>
+        #        second_cat = ul.at_xpath("//li[@class='Con2']")
+        #second_cat.children.each do | p |
+        #    link = p.at_xpath("//a")
+        #    puts URI.unescape(link.content) if link
+        #end
+        # third 'li' are the 'more' link, not very useful now!
+        
+        puts "--------------"
+    end
+    
+    
+    # dump the data
+    
+end
+
+
+
+
+# ------------------------------
 
 # NOTE: ddmap at the moment only shows first 25 pages of query data, so we need to query with area included to get all data! But we can use this page to gather all the 'areas data'("区域")
 def collect_all_organizations(category, area=nil)
@@ -111,10 +159,14 @@ if __FILE__ == $0
 
     
     
+    collect_place_categories("025")
+    
     #collect_all_organizations "美食"
     
+=begin    
+    #
     puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape("%BB%C6%C6%D6%C7%F8"))
-=begin 
+ 
     # link test
     link  = "http://www.ddmap.com/map/21----%D7%A1%D5%AC%D0%A1%C7%F8----/"
     text = "%D7%A1%D5%AC%D0%A1%C7%F8"

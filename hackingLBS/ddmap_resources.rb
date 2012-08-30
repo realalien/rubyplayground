@@ -4,7 +4,7 @@ require 'uri'
 require 'nokogiri'
 require 'open-uri'
 require 'iconv'
-
+require 'yaml'
 
 DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map/21----%C3%C0%CA%B3----/
                      "住宅小区" => "D7%A1%D5%AC%D0%A1%C7%F8" ,
@@ -12,6 +12,7 @@ DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map
 }
 
 
+SUB_CATEGORIES_DATA_FILE = "sub_categories.yaml"
 
 
 # it looks like the escaped text in the link is not easily decoded, we need to get the mapping info instead of text encoding for tasks like querying
@@ -42,7 +43,62 @@ def collect_all_city_phone_prefix
     
 end
 
+# 
+def collect_place_all_sub_categories(city_phone_prefix)
+    categories = []
+    
+    # url
+    city_phone_prefix.gsub!(/^0+/, "") # remove leading zero
+    url = "http://www.ddmap.com/sitemap/#{city_phone_prefix}/1.htm"
+    # xml process
+    doc = Nokogiri::HTML(open(url))
+    
+    css_path = "html body div#body div.siteCon div.siteCon1 ul li.Con2 p a"
+    
+    doc.css(css_path).each do |link|
+        categories << URI.unescape(link.content)
+    end
+        
+    puts categories
+    return categories    
+end
 
+
+def project_sub_categories_location(area_code)
+    unless File.exist? File.basename(__FILE__, ".rb")
+       Dir.mkdir(File.basename(__FILE__,".rb")) 
+    end
+    File.join(File.basename(__FILE__,".rb") , "#{area_code}_#{SUB_CATEGORIES_DATA_FILE}" ) 
+end
+
+def dump_sub_categories_to_file(array_of_categories, area_code)
+    File.open( project_sub_categories_location(area_code), 'w' ) do |out|
+        YAML.dump( array_of_categories, out )
+    end 
+end
+
+
+def read_sub_categories_by_area_code(area_code)
+    # TODO: more detection logic on data freshing.
+    unless File.exist?( project_sub_categories_location(area_code) )
+        cats = collect_place_all_sub_categories(area_code)
+        if cats.size > 0
+           dump_sub_categories_to_file(cats, area_code)
+        else
+            raise "[DEBUG] no sub categories found, please check the program!"
+        end
+    end
+
+    File.open(  project_sub_categories_location(area_code), 'r' ) do |yf|
+        YAML.load_documents( yf ) 
+    end
+end
+    
+
+# ----------
+
+# Q: Why I can't search node under one child node using xpath or css?
+# A: 
 
 # NOTE: the levels of data is collectable from sitemap, e.g. http://www.ddmap.com/sitemap/25/1.htm (http://www.ddmap.com/sitemap/<city_phone_prefix>/1.htm)
 # NOTE: the city_phone_prefix may be not necessary in collecting categories since every city should has similar data. For now for the simplicity of data retriving and without proper phone prefix dataset, we just assign one city prefix, beginning from one city!
@@ -150,6 +206,13 @@ def find_areas_for_category_experimental(category)
   return areas
 end
 
+# --------------------
+# data grabbing
+# --------------------
+
+def 
+
+
 
 
 # --------------------
@@ -157,9 +220,9 @@ end
 
 if __FILE__ == $0
 
+    read_sub_categories_by_area_code("025")
     
-    
-    collect_place_categories("025")
+    # collect_place_categories("025")
     
     #collect_all_organizations "美食"
     

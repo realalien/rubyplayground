@@ -65,11 +65,11 @@ end
 
 
 def project_sub_categories_location(area_code)
-    unless File.exist? File.basename(__FILE__, ".rb")
-       Dir.mkdir(File.basename(__FILE__,".rb")) 
-    end
     File.join(File.basename(__FILE__,".rb") , "#{area_code}_#{SUB_CATEGORIES_DATA_FILE}" ) 
 end
+
+
+
 
 def dump_sub_categories_to_file(array_of_categories, area_code)
     File.open( project_sub_categories_location(area_code), 'w' ) do |out|
@@ -94,6 +94,12 @@ def read_sub_categories_by_area_code(area_code)
     end
 end
     
+# ----------
+
+def read_sub_localities_by_city_code(city_phone_prefix)
+    
+end
+
 
 # ----------
 
@@ -206,31 +212,137 @@ def find_areas_for_category_experimental(category)
   return areas
 end
 
+
+def filename_for_places_by_city_category(city_phone_prefix, category_name)
+    File.join(File.basename(__FILE__,".rb") , "#{city_phone_prefix}_#{category_name}" )
+end 
+
+def dump_places_by_city_cateogry(places, city_phone_prefix, category_name)
+    File.open( filename_for_places_by_city_category(city_phone_prefix, category_name), 'w' ) do |out|
+        YAML.dump( places, out )
+    end 
+end
+
+
 # --------------------
 # data grabbing
 # --------------------
 
-def 
+# To query for a category of places(e.g. 住宅小区 is a sub category in ddmap.com), 
+# the query link would be "http://www.ddmap.com/map/21----%D7%A1%D5%AC%D0%A1%C7%F8----/"
+# ( "http://www.ddmap.com/map/<city_phone_prefix>/----<encoded_category_name>----/", 
+#   in which the 'encoded_category_name' should be processed like, 
+#      converter  = Iconv.new( "GB2312", "UTF-8" )
+#      URI.escape( "#{converter.iconv( '黄浦区'.encode!('UTF-8') )}"  )
+# ) 
+# Q: why can't be one liner?
+# A: 
 
+# NOTE: probably this methods will get partial data as query results won't show up all,
+# so this is just used for estimating total results number
+# To find all the places belongs to a city, one should query using
+def get_places_by_city_phone_prefix_category_name(city_phone_prefix, category_name)
+    
+    allowed_cat = read_sub_categories_by_area_code(city_phone_prefix)
+    puts "Categories loaded! "
+    puts "#{allowed_cat.join(',')}"
+    
+    allowed_sub_localities  = read_sub_localities_by_city_code(city_phone_prefix)
+    puts "Sublocalities loaded! "
+    puts "#{allowed_sub_localities.join(',')}"
+    
+    
+    if allowed_cat.include? category_name and allowed_sub_localities.size > 0
+        
+        all_places = []
+        allowed_sub_localities.each do | loc |
+           places = get_places_by_city_sublocality_category(city_phone_prefix, loc, category_name)
+           all_places + places
+        end
+        
+        if all_places.size > 0
+            dump_places_by_city_cateogry(all_places, city_phone_prefix, category_name)
+            puts "Total places: #{all_places.size}, given city:#{city_phone_prefix}, category: #{category_name} "
+            puts "Search/find your place in file dd_resources/#{city_phone_prefix}_#{category_name}.yaml" 
+        else
+            puts "No place found!"
+        end
+    else 
+        puts "Either #{category_name} or #{category_name} is not permitted!"
+    end
+    
+    
+end
 
+# SUG: city_phone_prefix
+# sublocality: should be human-read text and listed in the city-specific page!
+def get_places_by_city_sublocality_category(city_phone_prefix, sublocality, category_name)
+    
+    doc = Nokogiri::HTML(open(url))
+
+end
+
+def page_url_for_city_sublocality_category(page_num) # page_num starts from 1
+    q = "http://www.ddmap.com/map/#{city_phone_prefix}"
+    converter  = Iconv.new( "GB2312", "UTF-8" )
+    q += %Q{-URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # sublocality
+    q += %Q{---URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # category_name
+    q += %Q{---#{page_num}-1}  # pagination
+end
 
 
 # --------------------
 
 
 if __FILE__ == $0
-
-    read_sub_categories_by_area_code("025")
+    
+    # create project data filder
+    unless File.exist? File.basename(__FILE__, ".rb")
+        Dir.mkdir(File.basename(__FILE__,".rb")) 
+    end
+    
+    
+    
+    get_places_by_city_sublocality_category("21", "黄浦区", "住宅小区")
+    
+    
+=begin 
+ 
+    #read_sub_categories_by_area_code("025")
     
     # collect_place_categories("025")
     
     #collect_all_organizations "美食"
-    
-=begin    
-    #
-    puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape("%BB%C6%C6%D6%C7%F8"))
  
-    # link test
+ 
+    # ------ encoding exp 
+    puts  URI.unescape("%BB%C6%C6%D6%C7%F8").encoding
+    puts URI.escape("黄浦区")
+    converter  = Iconv.new( "GB2312", "UTF-8" )
+    puts URI.escape(  "#{converter.iconv( '黄浦区'.encode!('UTF-8') )}"  )
+    puts URI.escape(  "#{Iconv.iconv('GB2312', 'UTF-8', '黄浦区'.encode!('UTF-8') )}"  )
+    puts "---------"
+    puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape("%BB%C6%C6%D6%C7%F8"))
+    puts Iconv.iconv( 'GB2312','UTF-8',URI.unescape("黄浦区".encode!('GB2312')).encode!('UTF-8') )
+    puts URI.escape("黄浦区")
+    puts URI.escape("黄浦区").encode!('GB2312')
+    puts URI.escape("黄浦区").encode!('UTF-8')
+
+    puts Iconv.iconv('GB2312', 'UTF-8', "黄浦区")
+
+    puts  URI.escape(   "黄浦区".encode!('GB2312', 'utf-8').encode!( 'utf-8','GB2312')  )
+    
+    ec = Encoding::Converter.new( "UTF-8","GB2312")
+
+    puts "#{ec.convert('黄浦区')}"
+    puts "#{converter.iconv(URI.escape('黄浦区'))}"
+    #puts URI.escape(Iconv.iconv('GB2312', 'UTF-8', "黄浦区"))
+    
+    puts Iconv.iconv('GB2312', 'UTF-8', URI.escape("黄浦区"))
+    puts "%BB%C6%C6%D6%C7%F8" == Iconv.iconv('GB2312', 'UTF-8', URI.escape("黄浦区"))
+   
+ 
+    # ------  link test
     link  = "http://www.ddmap.com/map/21----%D7%A1%D5%AC%D0%A1%C7%F8----/"
     text = "%D7%A1%D5%AC%D0%A1%C7%F8"
     puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape(text))

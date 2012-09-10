@@ -257,7 +257,7 @@ def get_places_by_city_phone_prefix_category_name(city_phone_prefix, category_na
         all_places = []
         allowed_sub_localities.each do | loc |
            places = get_places_by_city_sublocality_category(city_phone_prefix, loc, category_name)
-           all_places + places
+           all_places += places
         end
         
         if all_places.size > 0
@@ -277,17 +277,30 @@ end
 # SUG: city_phone_prefix
 # sublocality: should be human-read text and listed in the city-specific page!
 def get_places_by_city_sublocality_category(city_phone_prefix, sublocality, category_name)
+    test_url = page_url_for_city_sublocality_category(1, city_phone_prefix, sublocality, category_name)
+    puts "#{test_url}"
+    css = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
+    doc = Nokogiri::HTML(open(test_url))
     
-    doc = Nokogiri::HTML(open(url))
-
+    doc.css(css).each do | node |
+      # child #1 <h3>, child0 <a>
+        puts node.children.at(".//p/a")  #["content"]  Iconv.iconv('UTF-8', 'GB2312',URI.unescape(
+        
+        puts "----"
+      # child #2 has address
+        puts node.children[1].children[0]  #["content"]
+        puts "--------"
+    end
+    
 end
 
-def page_url_for_city_sublocality_category(page_num) # page_num starts from 1
+def page_url_for_city_sublocality_category(page_num, city_phone_prefix,sublocality,category_name ) # page_num starts from 1
     q = "http://www.ddmap.com/map/#{city_phone_prefix}"
     converter  = Iconv.new( "GB2312", "UTF-8" )
-    q += %Q{-URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # sublocality
-    q += %Q{---URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # category_name
-    q += %Q{---#{page_num}-1}  # pagination
+    q += %Q{-#{URI.escape( converter.iconv( sublocality.encode!('UTF-8')) )}}  # sublocality
+    q += %Q{---#{URI.escape( converter.iconv(category_name.encode!('UTF-8')) )}}  # category_name
+    q += %Q{---#{page_num}-1/}  # pagination
+    return q
 end
 
 

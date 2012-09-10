@@ -6,6 +6,9 @@ require 'open-uri'
 require 'iconv'
 require 'yaml'
 
+require 'geocoder'
+
+
 DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map/21----%C3%C0%CA%B3----/
                      "住宅小区" => "D7%A1%D5%AC%D0%A1%C7%F8" ,
                      
@@ -344,10 +347,14 @@ def get_places_by_city_sublocality_category(city_phone_prefix, sublocality, cate
     end
     
     # debug
-    #puts "Total places found: #{name_address_mapping.size}"
-    #name_address_mapping.each_pair do | k, v|
-    #    puts "#{k}  => #{v}"
-    #end
+    puts "Total places found: #{name_address_mapping.size}"
+    name_address_mapping.each_pair do | k, v|
+        puts "#{k}  => #{v}    #{Geocoder.coordinates(k)}"
+        
+        sleep 1
+    end
+    
+    
     
 end
 
@@ -361,6 +368,35 @@ end
 
 
 # --------------------
+
+# community extent data analysis
+
+# e.g. news parsing for local highlight, it will be cool that the info links can be created, e.g. event->community->people on sns
+
+# e.g. 区县代表选区
+
+# e.g. foresee the near future of a specific area.
+
+# e.g. find the most valueable reports and the authors who wrote them as credible sources!
+
+# e.g. collect the best examples of community building activities and think tanks!
+
+# e.g. research on community for capitals maneuvering, acurate attacks on speculators and maintaining the communities as a standing company.
+
+# e.g. kml-based, multi-layers based researches on dev of the communities.
+
+
+# I think of a game for collecting the buy-and-sell of houses
+# > people who are going to buy and 
+# > limit the daily usage in case of biz users
+# > regular contribution of labour rewarded with more data in a larger range, or maybe targeted house area
+# >  
+
+# RESEARCH TOOL on http://www.alpha-cn.com/about.html?id=3#TC
+
+# --------------------
+
+
 
 
 if __FILE__ == $0

@@ -101,6 +101,11 @@ def read_sub_localities_by_city_code(city_phone_prefix)
 end
 
 
+
+
+
+
+
 # ----------
 
 # Q: Why I can't search node under one child node using xpath or css?
@@ -274,20 +279,84 @@ def get_places_by_city_phone_prefix_category_name(city_phone_prefix, category_na
     
 end
 
+
+class String
+    def is_number?
+        true if Float(self) rescue false
+    end
+end
+
 # SUG: city_phone_prefix
 # sublocality: should be human-read text and listed in the city-specific page!
 def get_places_by_city_sublocality_category(city_phone_prefix, sublocality, category_name)
     
+    name_address_mapping = {}
+    
+    # get 'total pages' info, find the content with max 
+    # TODO: this can be done when getting the first page of the list(query result).
+    url = page_url_for_city_sublocality_category(1, city_phone_prefix, sublocality, category_name )
     doc = Nokogiri::HTML(open(url))
-
+    css_nav = "html body div.content div.listL div.PageNav ul li a"
+    nodeset_nav = doc.css(css_nav)
+    max_page = 1
+    nodeset_nav.each do |node|
+        #puts "-->  #{node.content}"
+       max_page = node.content.to_i if node.content.is_number? and node.content.to_i > max_page
+    end
+    
+    
+    if  max_page > 25 
+        puts "[INFO] #{max_page} pages of data found!"
+        puts "---------------------------------------------------------------"
+        puts "ddmap only allows 25 pages of query results. Following info may be partial."
+        puts "---------------------------------------------------------------"
+    else 
+        puts "[INFO] #{max_page} pages of data found!"
+    end
+    
+    # grabbing the first page which we already got when we try to find the total page
+    css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
+    nodeset = doc.css(css_path)
+    nodeset.each do | node |
+        names_node = node.at_xpath(".//h3/a")   #puts URI.unescape(names_node.content)
+        # there will be two, the first will be useful!  
+        addr_node = node.at_xpath(".//p/a")  # puts URI.unescape(addr_node.content)
+        name_address_mapping[names_node.content] = addr_node.content
+    end
+    
+    
+    # grabbing the following page 
+    if max_page >= 2
+        (2..max_page).each do |page_num| 
+            puts "processing page ....  #{page_num}"
+            url = page_url_for_city_sublocality_category(page_num, city_phone_prefix, sublocality, category_name )
+            doc = Nokogiri::HTML(open(url))
+            css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
+            nodeset = doc.css(css_path)
+            
+            nodeset.each do | node |
+                names_node = node.at_xpath(".//h3/a")   #puts URI.unescape(names_node.content)
+                # there will be two, the first will be useful!  
+                addr_node = node.at_xpath(".//p/a")  # puts URI.unescape(addr_node.content)
+                name_address_mapping[names_node.content] = addr_node.content
+            end
+        end
+    end
+    
+    # debug
+    #puts "Total places found: #{name_address_mapping.size}"
+    #name_address_mapping.each_pair do | k, v|
+    #    puts "#{k}  => #{v}"
+    #end
+    
 end
 
-def page_url_for_city_sublocality_category(page_num) # page_num starts from 1
+def page_url_for_city_sublocality_category(page_num, city_phone_prefix, sublocality, category_name) # page_num starts from 1
     q = "http://www.ddmap.com/map/#{city_phone_prefix}"
     converter  = Iconv.new( "GB2312", "UTF-8" )
-    q += %Q{-URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # sublocality
-    q += %Q{---URI.escape( "#{converter.iconv( sublocality.encode!('UTF-8') )}"  )}  # category_name
-    q += %Q{---#{page_num}-1}  # pagination
+    q += %Q{-#{URI.escape(converter.iconv(sublocality.encode!('UTF-8')))}}  # sublocality
+    q += %Q{---#{URI.escape(converter.iconv(category_name.encode!('UTF-8')))}}  # category_name
+    q += %Q{---#{page_num}-1/}  # pagination
 end
 
 
@@ -297,9 +366,9 @@ end
 if __FILE__ == $0
     
     # create project data filder
-    unless File.exist? File.basename(__FILE__, ".rb")
-        Dir.mkdir(File.basename(__FILE__,".rb")) 
-    end
+    #unless File.exist? File.basename(__FILE__, ".rb")
+    #    Dir.mkdir(File.basename(__FILE__,".rb")) 
+    #end
     
     
     

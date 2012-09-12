@@ -3,6 +3,8 @@
 require 'mechanize' 
 require 'couch_potato'  # because we can write view(design doc) in ruby.
 require 'mongoid'
+require 'feedzirra'
+
 
 # ----- General Ideas ------
 # STEP: collect many of news for one of the industries from one or more authentic/credible news agents, store them in a nosql db for analysis. (  should search tagged/analysed values, raw data is only for referencing, )
@@ -220,10 +222,48 @@ if __FILE__ == $0
 =end
     
 
-  
+=begin
+     # ============== TEST of regular data crawling  ==============
+=end
+
+# NOTE: the Feedzirra is unable to parse eeo's news correctly, TODO: find out why and fix!
+
+url = "http://app.eeo.com.cn/?app=rss&controller=index&action=feed&catid=29"
+url = "http://www.eeo.com.cn/finance/rss.xml"  
+url = "http://www.google.com/alerts/feeds/09340687053359415747/10888760548232237201"
+# fetching a single feed
+feed = Feedzirra::Feed.fetch_and_parse(url, 
+                                       :on_success => lambda {|feed| puts "aa #{feed.title}" },
+                                       :on_failure => lambda {|url, response_code, response_header, response_body| puts response_body })
+#puts feed
+sleep_interval = 60*5
+
+while true do 
+    updated_feed = Feedzirra::Feed.update(feed)
+    #puts updated_feed.class
+    #puts updated_feed.has_new_entries?
+    a = updated_feed.new_entries  # TODO: is it ok when first load the resources?
+    if a.size > 0
+      puts "Found new #{a.size} entries..."
+      a.each do |entry |
+        puts "processing ...#{entry.title} ( #{entry.url} )"
+          # EeoCollector.collect entry.url
+      end
+      sleep_interval = 60*5  
+    else 
+      puts "No new entry found."
+      sleep_interval = 60 # check every min
+    end
+    
+    puts "updated at: #{Time.now}"
+    sleep sleep_interval
+end
+
+
+    
+
  
- 
-  
+=begin  
   # test of newly added property after some data has been stored.  
   
   if ARGV.size == 1
@@ -231,6 +271,8 @@ if __FILE__ == $0
   else
      puts "[Usage]ruby chronical_analysis.rb <url>" 
   end
+=end 
+ 
 end
 
 

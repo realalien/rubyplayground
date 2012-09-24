@@ -3,7 +3,7 @@
 require 'mechanize' 
 require 'couch_potato'  # because we can write view(design doc) in ruby.
 require 'mongoid'
-require 'feedzirra'
+#require 'feedzirra'
 
 
 # ----- General Ideas ------
@@ -224,7 +224,7 @@ if __FILE__ == $0
 
 =begin
      # ============== TEST of regular data crawling  ==============
-=end
+
 
 # NOTE: the Feedzirra is unable to parse eeo's news correctly, TODO: find out why and fix!
 
@@ -259,11 +259,12 @@ while true do
     sleep sleep_interval
 end
 
-
+=end
     
 
  
-=begin  
+=begin 
+=end
   # test of newly added property after some data has been stored.  
   
   if ARGV.size == 1
@@ -271,7 +272,7 @@ end
   else
      puts "[Usage]ruby chronical_analysis.rb <url>" 
   end
-=end 
+ 
  
 end
 

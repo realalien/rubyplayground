@@ -24,7 +24,8 @@ module ElectricNewsPaperTool
     
     
 module PublisherDetector  
-  Allowed_Publisher = { "www.xinmin.cn"=>"新民网", "www.jfdaily.com" => "解放牛网" }  
+  Allowed_Publisher = { "www.xinmin.cn"=>"新民网", "www.jfdaily.com" => "解放牛网",
+                        "www.eeo.com.cn" => "经济观察网" }
     
   attr_accessor :raw, :link
   attr_accessor :doc

@@ -1,5 +1,6 @@
 gem "activesupport", ">= 3.1.1"
-gem "feedzirra", "0.2.0.rc2"
+#gem "feedzirra", "0.2.0.rc2"
+gem "couch_potato"
 
 
 group :test do

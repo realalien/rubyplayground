@@ -2,7 +2,7 @@
 
 #require 'mongoid' # NOTE: it doesn't seem to be a good choice using mongoid for data analysis. what about couchdb?
 require 'mechanize' 
-require File.join(File.dirname(__FILE__), "models.rb") 
+#require File.join(File.dirname(__FILE__), "models.rb") 
 
 # --- General Ideas ---
 # STEP: find new articles.
@@ -233,11 +233,11 @@ if __FILE__ == $0
 
 =begin 
     # ----------------   number detection -------------------
- 
+=end 
 	# link = "http://www.eeo.com.cn/2012/0622/228773.shtml"
 	#link = "http://www.eeo.com.cn/2012/0627/228943.shtml"  
     #link = "http://www.eeo.com.cn/2012/0312/222544.shtml"
-
+    link = "http://www.eeo.com.cn/2012/0725/230631.shtml"
 
     page = retrieve_content(link)
     title, content, raw = eeo_title_and_content(page)   # NOTE: raw is not used yet
@@ -277,18 +277,20 @@ if __FILE__ == $0
     excepts.each do | e|
 	  #if e.include? "力帆汽车销售有限公司(以下简称“力帆汽车销售”)为解决在公"
 		e_idx = items.find_index e
-		#puts "e_idx  --->  #{e_idx}"
-		#puts "e_idx.class --->  #{e_idx.class}"
+    puts "[INFO] trying to recover date info for\n#{e}"
+		puts "e_idx  --->  #{e_idx}"
+		puts "e_idx.class --->  #{e_idx.class}"
 		search_idx = 0	
 		# search previous sentences until it find a date
 		search_idx = e_idx - 1 unless e_idx.nil?
 		while search_idx >= 0  
 			prev = items[search_idx]
-			#puts "search: #{search_idx}, prev  ---->  #{prev}"
+			puts "search: #{search_idx}, prev  ---->  #{prev}"
 			date = prev.date_record		
 			if !date.nil? && !date.empty?
 				modified = e + "[上文提到时间:#{date}]"
-				#puts "Find date:  modified  ----> #{modified}"	
+				puts "Find date:  modified  ----> #{modified}"	
+        puts "==============================="
 				if e.has_large_money_numbers?
 					recovered << modified
 					recoverable << e
@@ -345,7 +347,7 @@ if __FILE__ == $0
 		end
     end
 
-=end
+
     
     
     # ------ storage --------

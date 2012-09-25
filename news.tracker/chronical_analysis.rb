@@ -3,6 +3,10 @@
 require 'mechanize' 
 require 'couch_potato'  # because we can write view(design doc) in ruby.
 require 'mongoid'
+require 'mongoid_taggable'
+
+require File.join(File.dirname(__FILE__),'media_cmp.rb')  
+
 #require 'feedzirra'
 
 
@@ -16,10 +20,11 @@ require 'mongoid'
 # -------------------------------------------------------------
 
 Mongoid.configure do |config|
-    name = "news_tracker_dev"
-    host = "localhost"
-    port = 27017
-    config.database = Mongo::Connection.new.db(name)
+  name = "news_tracker_dev"
+  host = "localhost"
+  port = 27017
+  config.database = Mongo::Connection.new.db(name)
+  config.use_utc = true  # in case we retrieve data from international news source
 end
 
 
@@ -43,7 +48,80 @@ class NewsArticle
     validates_uniqueness_of :title, :scope => [:news_agent_name]  # 同一个机构不收录同名文章(避免重复录入) TODO: potential bug, should include aricle publishing date.
     validates_inclusion_of :news_agent_name, :in => ['eeo' ] # NOTE: even in dev, sources are limited. # Later, we may register for expression to get the list of values allowed.
     
+    
+    # 2012.09.25  2nd attempt after wb.bz tagging expirement
+    embeds_many :tag_categories
+    embeds_many :biz_number
+  
 end
+
+
+class NewsArticleAuditTool
+  def news_articles_by_authors(authors)
+    NewsArticle.where("tag_categories.tags_array".to_sym.in => ([] << authors).flatten )
+  end
+  
+  
+end
+
+# NOTE: When glancing through the book 'Taming Text', it reads that there is a technique related to  tagging(multiple categories), it did confirmed my idea and here is a example trying to simulate that way of processing, to see how far I can reach! 
+
+class TagCategory
+  include Mongoid::Document
+  include Mongoid::Timestamps::Updated
+  
+  field :name, type: String
+   
+  embedded_in :news_article
+  
+  
+  include Mongoid::Taggable
+  tags_separator ','  # TODO:SUG: should allow case-insensitive and blankspace collapsable :)
+end
+
+
+# just an array of string, SUG: if possible, eliminate the use of TagCategory
+class TagInfo
+  include Mongoid::Document 
+  include Mongoid::Timestamps::Updated
+end
+
+
+# NOTE: supposed to collect financial data to reconstruct the origin report based on the pieces of information mentioned in different articles, in order to create a big picture of specific economic feature, for educational use, it 
+#  orginally, it is hopefully to serve as validator of the articles and jigsaw puzzle of what ever. 
+
+# NOTE: this data is supposed to generated from news webpage's content by machine, but it should also can be updated manually
+class BizNumber 
+  include Mongoid::Document
+  include Mongoid::Timestamps::Updated
+
+  field :from_sentence, type:String
+  
+  field :concept, type:String   # what's the value called.
+  
+  field :time_range_start, type: DateTime  # string description will be hard for searching and reused
+  field :time_range_end, type: DateTime
+  field :is_rough, type:Boolean, default: false 
+  
+  field :geo_range_text, type: String  # it would be nice to be standardized in levels
+  
+  
+  field :number,  type:Float
+  field :unit,  type:String  # TODO: probably need human intervention as this info is crucial and not parsed accurately!
+  
+  
+  
+  # field :number_category, type: String   # supposed to be among ['financial', 'production']
+  # NOTE: to be simple, it may not be the best idea to be complex like this,
+  #       http://www.imf.org/external/pubs/ft/cgmfs/eng/pdf/cgmfs.pdf
+  
+  
+  embedded_in :news_article
+  
+end
+
+
+# ------------------------------
 
 
 # supposed to monitor/mgmt a data key 
@@ -264,7 +342,7 @@ end
 
  
 =begin 
-=end
+
   # test of newly added property after some data has been stored.  
   
   if ARGV.size == 1
@@ -272,7 +350,24 @@ end
   else
      puts "[Usage]ruby chronical_analysis.rb <url>" 
   end
- 
+=end
+
+    
+    
+    
+=begin 
+
+# test of content parsing 
+
+=end
+
+a = NewsArticle.first    
+n = NewspaperDetector.new(a.raw_page, a.link)
+puts n.get_publisher
+
+    
+
+    
  
 end
 

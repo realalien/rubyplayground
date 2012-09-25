@@ -16,6 +16,15 @@ class Media_Cmp_Test < Test::Unit::TestCase
       assert_equal "解放牛网", @n.get_publisher
     end
 
+    should "get author's name" do
+      assert_equal "", @n.get_authors[0]
+    end
+
+    should "determine if this news is redistributed" do
+      assert_equal true, @n.is_redistributed?
+    end
+
+    
 
   end
 

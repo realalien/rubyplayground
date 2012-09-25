@@ -27,19 +27,22 @@ module PublisherDetector
   Allowed_Publisher = { "www.xinmin.cn"=>"新民网", "www.jfdaily.com" => "解放牛网",
                         "www.eeo.com.cn" => "经济观察网" }
     
-  attr_accessor :raw, :link
-  attr_accessor :doc
-  def initialize(raw_data, link) # link serves as future replacement fo raw_data that cached locally.
-    @raw = raw_data
-    @link = link
-  end
+
     
   def get_publisher_by_link_to_front_page
     # TODO: the doc should be reused ! 
-     @doc = Nokogiri::HTML(open(@link))  
-     nodeset = @doc.xpath("//a[text()='首页']")  #  TODO:  here should depend on locale!
-     if nodeset.length > 0
-       link_for_name(nodeset[0][:href])  # just find the first
+     if @raw 
+       @doc = Nokogiri::HTML(@raw)  
+     elsif @link
+       @doc = Nokogiri::HTML(open(@link))    
+     end 
+     
+     if @doc
+       nodeset = @doc.xpath("//a[text()='首页']")  #  TODO:  here should depend on locale!
+       #puts nodeset
+       if nodeset.length > 0
+         link_for_name(nodeset[0][:href])  # just find the first
+       end
      end
   end      
 
@@ -55,12 +58,12 @@ module PublisherDetector
   end
   
   def link_for_name(link)
-      Allowed_Publisher[removed_protocols(link)]
+      Allowed_Publisher[clean_for_domain(link)]
   end
     
     
-  def removed_protocols(link)
-    link.gsub("http://", "").gsub("https://", "") if link
+  def clean_for_domain(link)
+    link.gsub("http://", "").gsub("https://", "").gsub("/","") if link
   end
   
 end # of module PublisherDetector
@@ -78,6 +81,29 @@ end # of module  OriginalPublisherDetector
     
 # NOTE: 
 module ContentProcess
+  
+    def ensure_doc
+      unless @doc
+        if @raw 
+          @doc = Nokogiri::HTML(@raw)  
+        elsif @link
+          @doc = Nokogiri::HTML(open(@link))    
+        else
+          nil
+        end
+      else
+        @doc
+      end 
+    end
+  
+    # NOTE:TODO:Q: how to embed another module which shares one instance variable? 
+    #def get_content  ; end
+  
+    # NOTE: to find the authors for different newspaper is a little hard because the text is embedded in the article, and to distinguish the author's name(s), we depend on the text ahead of the names, such like "记者", "特约评论员" and many unexpected roles in reporting. 
+    # NOTE: if machine fails to do the job(of course not regularly), human intervention should be introduced, e.g. ask human to find the author. 
+    def get_authors
+      ensure_doc
+    end
   
     def tagging_with_category( tagging,category_name)
       
@@ -99,10 +125,48 @@ class NewspaperDetector
 
   include ElectricNewsPaperTool::PublisherDetector
 
+  # NOTE: the module will be cross-referenced, not nice as API design
+  #include ElectricNewsPaperTool::ContentProcess
+  
+  #  def initialize(raw_data, link) # link serves as future replacement fo raw_data that cached locally.
+	#super
+  #end
+  
+  attr_accessor :raw, :link
+  attr_accessor :doc
   def initialize(raw_data, link) # link serves as future replacement fo raw_data that cached locally.
-	super
+    @raw = raw_data
+    @link = link
+  end
+  
+  
+  def get_content 
+    pub = get_publisher
+    if pub == "解放牛网"
+      xpath = "//div[@class='content']" 
+      node = @doc.at_xpath(xpath)
+      @content =  node.content
+    elsif pub == "经济观察网"
+      xpath = "//div[@id='text_content']" 
+      node = @doc.at_xpath(xpath)
+      @content =  node.content
+    elsif pub == "新民网"
+      
+    else 
+      puts "[WARNING] we can't handle newspaper from the publisher: #{pub}"
+    end
+  end
+  
+  
+  def get_authors
+    
   end
 
+  def get_audit_number
+    
+  end
+  
+  
 end
 
 
@@ -110,10 +174,14 @@ end
 
 
 
-if __FILE__ == $0
-   n = NewspaperDetector.new(jf_news, jf_url)
-   puts n.get_publisher  
 
+
+if __FILE__ == $0
+   jf_url = "http://newspaper.jfdaily.com/xwcb/html/2012-09/09/content_878683.htm"
+   jf_url = "http://www.eeo.com.cn/2012/0725/230631.shtml"
+   n = NewspaperDetector.new(nil, jf_url)
+   #puts n.get_publisher  
+   puts n.get_content
 end
 
 

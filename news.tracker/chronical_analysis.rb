@@ -91,6 +91,7 @@ end
 #  orginally, it is hopefully to serve as validator of the articles and jigsaw puzzle of what ever. 
 
 # NOTE: this data is supposed to generated from news webpage's content by machine, but it should also can be updated manually
+# NOTE: it's much more difficult than I expected.
 class BizNumber 
   include Mongoid::Document
   include Mongoid::Timestamps::Updated

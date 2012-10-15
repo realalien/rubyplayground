@@ -1,4 +1,5 @@
 source :gemcutter
+gem "activesupport", "=3.2.3"
 gem "haml"
 gem "oauth"
 gem "json"

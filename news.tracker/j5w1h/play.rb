@@ -40,7 +40,6 @@ def people_once_checkins_from_dianping(kw)
     people_in_hashes = []
     saved_people = Dir.glob("./data/people_checkins_by_shop_search_#{kw}.yml")
     
-    
     if saved_people.size <=0
         # collect shops first
         shops = get_shops_by_keywords_from_dianping(kw) 
@@ -59,16 +58,18 @@ def people_once_checkins_from_dianping(kw)
         
         people_in_hashes.flatten!
         
-        File.open("data/people_checkins_by_shop_search_#{kw}.yml", "w") {|f| f.write(people_in_hashes.to_yaml) }
+        File.open("./data/people_checkins_by_shop_search_#{kw}.yml", "w") {|f| f.write(people_in_hashes.to_yaml) }
         
     else
+
         saved_people.each do |filename|
+            puts "Loading from file #{filename}..."
             people_in_hashes  |= YAML::load( File.open(filename) )
         end
     end
-    p people_in_hashes 
+    # p people_in_hashes 
     
-    people.flatten!
+    people_in_hashes.flatten
 end
 
 
@@ -138,12 +139,23 @@ if __FILE__ == $0
     
     people_once_checkins  = people_once_checkins_from_dianping(geo_name_rough)
     
-
-    
     
     # 1.3 analyse concentration of users's checkin', if find potential candidates, record!
+    target_area = "嘉定区"
+    people_most_visited_jiading = []
     
-
+    people_once_checkins.each do | person |
+        member_as_obj = Member.new  # to use Shop methods, I have to create after model
+        member_in_hash = person
+        member_in_hash.each { |k, v| member_as_obj.instance_variable_set("@#{k}", v) }
+            
+        
+        if target_area == member_as_obj.most_reviewed_city_district[1]
+            people_most_visited_jiading << member_in_hash
+        end
+    end
+    
+    File.open("data/people_most_visited_#{keyword}_who_once_checkin_#{geo_name_rough}.yml", "w") {|f| f.write(people_most_visited_jiading.to_yaml) }
 end
 
 

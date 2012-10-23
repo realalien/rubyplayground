@@ -51,7 +51,8 @@ def find_shops
   dianping_search_shops(kw)  
 end
 
-$DIANPING_SHOP_SEARCH_PATH = "http://www.dianping.com/search/keyword/1/0_" #TODO: watch-out mechanism ffor future change.
+$DIANPING_SHOP_SEARCH_PATH_START_PAGE = "http://www.dianping.com/search/keyword/1/0_" #TODO: watch-out mechanism ffor future change.
+$DIANPING_SHOP_SEARCH_PATH = "http://www.dianping.com/search/keyword/1/0_"
 
 # Returns an array of shops via a Dianping.com's search
 #TODO: handling no record scenario, 
@@ -59,9 +60,18 @@ $DIANPING_SHOP_SEARCH_PATH = "http://www.dianping.com/search/keyword/1/0_" #TODO
 #play: more search via geo location
 #play: watch out for updated information, redo the search or history book-keeping.
 
-def dianping_search_shops(keywords)
-    query_link = "#{$DIANPING_SHOP_SEARCH_PATH}#{URI.escape(keywords)}"    
-    return DianpingPageParser.shops_in_page query_link
+def dianping_search_shops(keywords,limit_query_pages)
+    shops = []
+    query_link = "#{$DIANPING_SHOP_SEARCH_PATH_START_PAGE}#{URI.escape(keywords)}"
+    pages = DianpingPageParser.number_of_pages(query_link)
+    
+    puts pages
+    
+    max_page_to_crawl = (limit_query_pages.to_int < pages) ? limit_query_pages.to_int : pages
+    
+    (1..max_page_to_crawl).each { | page | shops << DianpingPageParser.shops_in_page(File.join(query_link, "p#{page}"))  }
+    
+    return shops
 end
 
 # Returns an array of users whose check-ins were recorded in a specific shop.
@@ -79,7 +89,7 @@ end
 if __FILE__ == $0
     
     
-    SinaWeiboPageParser.users_in_page "http://www.weibo.com/u/1191241142"
+    #SinaWeiboPageParser.users_in_page "http://www.weibo.com/u/1191241142"
     
     
     # ------------------------------------------------------------------------

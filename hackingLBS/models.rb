@@ -130,33 +130,81 @@ class SinaWeiboPageParser
     end
 end
 
+# Options:
+# * :tries - Number of retries to perform. Defaults to 1.
+# * :on - The Exception on which a retry will be performed. Defaults to Exception, which retries on any Exception.
+#
+# Example
+# =======
+#   retryable(:tries => 1, :on => OpenURI::HTTPError) do
+#     # your code here
+#   end
+#
+def retryable(options = {}, &block)
+    opts = { :tries => 1, :on => Exception }.merge(options)
+    
+    retry_exception, retries = opts[:on], opts[:tries]
+    
+    begin
+        #puts "before yield retries....#{opts[:tries] - retries + 1}"
+        yield
+        #puts "after yield"
+    rescue   retry_exception => e
+        puts "[Error] retrieving #{url} at request No. #{$TOTAL_PAGE_REQUEST}"
+        #puts e.message
+        #puts e.backtrace
+        $ACCUMULATED_DELAY += 4
+        puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+        sleep $ACCUMULATED_DELAY
+        
+        # just return an empty Mechanize::Page
+        #page =  nil
+        puts "[WARNING] Exception occurred! retry ... #{retries}"
+        retry if (retries -= 1) > 0
+    end
+    
+    yield
+end
 
 
 class DianpingPageParser
     
     # TODO: should allow caller method to use block to give sth in handling errors.
     def self.safeguard_page_retrieve(url)
+      retryable(:tries => 3, :on => { :return => nil }) do   # :exception => Mechanize::ResponseCodeError,
+       #$TOTAL_PAGE_REQUEST += 1; puts "..........#{$TOTAL_PAGE_REQUEST}"
+        
         page = nil
+      begin      
         DianpingPageParser.rest_to_avoid_page_forbidden
-        begin
+         #begin
             m = Mechanize.new { |agent|
                 agent.user_agent_alias = 'Mac Safari'
             }
-            page = m.get(url) 
-        rescue => e 
-            puts "[Error] retrieving #{url} "
-            puts e.message
-            puts e.backtrace
-            $ACCUMULATED_DELAY += 1
-            puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
-            sleep $ACCUMULATED_DELAY
-            
-            # just return an empty Mechanize::Page
-            page =  Mechanize::Page.new
-        ensure
-            $TOTAL_PAGE_REQUEST += 1
+  
+            puts url
+            page = m.get(url)
+    
             return page
-        end
+       rescue
+            return nil
+       end
+      end
+         # rescue => e 
+    #   puts "[Error] retrieving #{url} at request No. #{$TOTAL_PAGE_REQUEST}"
+    #  puts e.message
+    #  puts e.backtrace
+    # $ACCUMULATED_DELAY += 1
+    #  puts "[WARNING] Compulsory put programming into sleep due to page retrieval error. Back to work in #{$ACCUMULATED_DELAY} minute(s)"
+    #  sleep $ACCUMULATED_DELAY
+            
+    #   # just return an empty Mechanize::Page
+    #  page =  nil
+        #ensure
+    # $TOTAL_PAGE_REQUEST += 1
+            
+    #     end
+   
     end
     
     def self.rest_to_avoid_page_forbidden
@@ -202,6 +250,7 @@ class DianpingPageParser
         # puts "[INFO] DianpingPageParser#members_in_page...begin (#{url})"
         page = DianpingPageParser.safeguard_page_retrieve url
         
+        if page
             #puts page
         page.links.each do | link |
             if link.href =~ /\/member\/[0-9]+$/ 
@@ -233,6 +282,7 @@ class DianpingPageParser
             end
         end 
         
+        end
         #puts "[INFO] DianpingPageParser#members_in_page...end"
         return members
     end
@@ -250,20 +300,21 @@ class DianpingPageParser
 
         page = DianpingPageParser.safeguard_page_retrieve url_has_pagination
 
-        node_set = page.search(xpath)
+        if page 
+            node_set = page.search(xpath)
 
-        if node_set and node_set.length > 0 
-            # collect all the inner text an 
-            page_numbers = []
-            node_set.each do | node|
-                page_numbers << node.inner_text.to_i
+            if node_set and node_set.length > 0 
+                # collect all the inner text an 
+                page_numbers = []
+                node_set.each do | node|
+                    page_numbers << node.inner_text.to_i
+                end
+                #puts "[DEBUG] #{page_numbers.sort.last} pages found."
+                return page_numbers.sort.last
+            else
+                return 1  # only one page, no pagination
             end
-            #puts "[DEBUG] #{page_numbers.sort.last} pages found."
-            return page_numbers.sort.last
-        else
-            return 1  # only one page, no pagination
         end
-        
     end
 
     def self.get_one_item_from_xpath(xpath, page) # use page to avoid multiple times of retrieving and parsing
@@ -284,23 +335,27 @@ class DianpingPageParser
     def self.structrued_address(shop_url)        
         page = DianpingPageParser.safeguard_page_retrieve shop_url
         
-# TODO: exception handling when parsing!!!!!
+        if page
+            # TODO: exception handling when parsing!!!!!
 
-        # -- city
-        # NOTE: find node like 
-        # <a href="http://www.dianping.com/citylist" id="G_loc" class="loc-btn"><span class="txt">上海站</span></a>
-        xpath = "//div[@class='location' and @id='G_loc-wrap']/a[@href='http://www.dianping.com/citylist' and @id='G_loc']/span[@class='txt']"
-        city = DianpingPageParser.get_one_item_from_xpath(xpath, page)
-        
-        # -- district  
-        xpath = "//span[@class='region' and @itemprop='locality region']"
-        district = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+            # -- city
+            # NOTE: find node like 
+            # <a href="http://www.dianping.com/citylist" id="G_loc" class="loc-btn"><span class="txt">上海站</span></a>
+            xpath = "//div[@class='location' and @id='G_loc-wrap']/a[@href='http://www.dianping.com/citylist' and @id='G_loc']/span[@class='txt']"
+            city = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+            
+            # -- district  
+            xpath = "//span[@class='region' and @itemprop='locality region']"
+            district = DianpingPageParser.get_one_item_from_xpath(xpath, page)
 
-        # -- address  
-        xpath = "//span[@itemprop='street-address']"
-        address = DianpingPageParser.get_one_item_from_xpath(xpath, page)
-     
-        return [city, district, address]
+            # -- address  
+            xpath = "//span[@itemprop='street-address']"
+            address = DianpingPageParser.get_one_item_from_xpath(xpath, page)
+         
+            return [city, district, address]
+        else 
+            return [nil, nil, nil]
+        end
     end
     
 

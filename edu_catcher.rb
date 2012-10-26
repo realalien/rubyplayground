@@ -37,6 +37,38 @@ $EDU_ORG = ["小学", "中学", "大学", "研究院"]
 
 
 
+
+
+
+
+
+
+require 'date'
+
+class XinminDailyCollector
+
+    # invar date is supposed to be like '2012-10-26'
+    def self.download_for_date(date=DateTime.now)
+
+        # check if date is before today's afternoon, newspaper is supposed to be published, otherwise not available
+        today = DateTime.now
+        avail_hour = 17
+        avail_time = DateTime::new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
+
+        if DateTime.parse(date) < avail_time
+            grab_news_for_date(avail_time)
+        end
+    end
+
+    def self.grab_news_for_date(datetiem)
+        
+    end
+
+end
+
+
+
+
 # ---------------------  parse sentence
 class String
     # Q: how can I apply the functions to specific objects rather than alll the string objects

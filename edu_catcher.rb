@@ -4,6 +4,12 @@
 # Purpose: find the organizations info from edu news and put it into an human life cycle management time-table, later can be extended to medical info/news analysis
 
 
+# IDEA: 2012.10.25, 
+# * considering that casual scripting with temporary data is not of much use in analytics, data storage(portable) should be established.
+# * Also, the data and the scripts are always under heavy changes, I think of creating a layer of data persistence, an experimental environment to check the quality of scripts, if pass the usage/worthwhile acceptance, then make it into a data center like storage!
+
+  
+
 
 $AVG_HUMAN_LIFE_EXPAND = 110
 
@@ -33,6 +39,63 @@ $EDU_ORG = ["小学", "中学", "大学", "研究院"]
 
 
 # --------------------- grab the content on target
+
+# NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first
+
+
+
+
+
+
+
+
+
+class WebPageTool
+    def self.retrieve_content(url)
+        begin
+        m = Mechanize.new { |agent| agent.user_agent_alias = 'Mac Safari' }
+        page = m.get(url)
+        rescue => e 
+        puts "[Error] retrieving #{url} "; puts e.message; puts e.backtrace
+        page = nil
+        ensure
+        #puts page.inspect ; #puts page.content
+        return page
+    end
+end
+    
+
+class XinminDailyCollector
+    
+    
+    def self.grab_newspaper_on_date(date)
+        
+        pages = self.find_pages_links(date)
+        
+        pages.each do |p|
+            self.find_pages_links(p)
+        end
+        
+    end
+
+    # invar:  date, a date on which the newspaper is available
+    # outvar: hash, a link-to-page_title mapping
+    def self.find_pages_links(date)
+        
+    end
+
+    # invar:  page, a one entry of link-to-page_title mapping
+    # outvar: hash, a link-to-page_title mapping
+    def self.find_articles_links(page)
+        
+    end
+
+end
+
+
+
+
+
 
 
 
@@ -94,7 +157,7 @@ def has_edu_organization?(str)
     mentions = []  # array of hash
     
     # TODO: how to look forward to include
-    ss = str.split(%r{；|。”|。})
+    ss = str.split(%r{；|。”|。})  # Chinese sentence period.
 
     ss.each do |s|
         if s.has_edu_organization?

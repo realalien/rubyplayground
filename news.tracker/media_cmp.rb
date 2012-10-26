@@ -166,10 +166,11 @@ class NewspaperDetector
     
   end
   
-  
 end
 
 
+
+# ---------------------------------------------------------------------------
 
 
 
@@ -177,11 +178,17 @@ end
 
 
 if __FILE__ == $0
+
+=begin
    jf_url = "http://newspaper.jfdaily.com/xwcb/html/2012-09/09/content_878683.htm"
    jf_url = "http://www.eeo.com.cn/2012/0725/230631.shtml"
    n = NewspaperDetector.new(nil, jf_url)
    #puts n.get_publisher  
    puts n.get_content
+=end
+    
+    
+
 end
 
 

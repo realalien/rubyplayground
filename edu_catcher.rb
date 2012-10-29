@@ -49,66 +49,97 @@ $EDU_ORG = ["小学", "中学", "大学", "研究院"]
 
 
 
+require 'mechanize'
 
 class WebPageTool
     def self.retrieve_content(url)
         begin
-        m = Mechanize.new { |agent| agent.user_agent_alias = 'Mac Safari' }
-        page = m.get(url)
+            m = Mechanize.new { |agent| agent.user_agent_alias = 'Mac Safari' }
+            page = m.get(url)
         rescue => e 
-        puts "[Error] retrieving #{url} "; puts e.message; puts e.backtrace
-        page = nil
+            puts "[Error] retrieving #{url} "; puts e.message; puts e.backtrace
+            page = nil
         ensure
         #puts page.inspect ; #puts page.content
+        end
         return page
     end
 end
     
 
-class XinminDailyCollector
-    
-    
-    def self.grab_newspaper_on_date(date)
-        
-        pages = self.find_pages_links(date)
-        
-        pages.each do |p|
-            self.find_pages_links(p)
-        end
-        
-    end
-
-    # invar:  date, a date on which the newspaper is available
-    # outvar: hash, a link-to-page_title mapping
-    def self.find_pages_links(date)
-        
-    end
-
-    # invar:  page, a one entry of link-to-page_title mapping
-    # outvar: hash, a link-to-page_title mapping
-    def self.find_articles_links(page)
-        
-    end
-
-end
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 require 'date'
+require 'nokogiri'
+require 'json'
 
+# TODO: web related exception handling.
 class XinminDailyCollector
+
+    
+    def self.grab_newspaper_on_date(date)
+        
+
+    end
+
+    def self.daily_news_links(date)
+        pages_and_articles = []
+        pages = self.find_pages_links(date)
+        
+        pages.each do |p|
+
+            pages_and_articles << { :page_title => p[:page_link],
+                                    :page_link => p[:page_link],
+                                    :articles_links => self.find_articles_links(p[:page_link]) }
+            
+        end
+        
+        return pages_and_articles
+    end
+
+
+    # invar:  date, a date on which the newspaper is available
+    # outvar: hash, a link-to-page_title mapping (Note: as directory of one day's pages are the same, link only include node_xxx.htm info)
+    # e.g. http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm 
+    #   is a page-listing webpage which contains
+    #   * links to the articles on that page of newspaper whose links looks like 
+    #      http://xmwb.xinmin.cn/html/2012-10/28/content_1_2.htm
+    #   * links to other pages
+    #      http://xmwb.xinmin.cn/html/2012-10/28/node_3.htm
+    def self.find_pages_links(date)
+        links_to_titles = []
+        pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.month}/#{date.day}"
+    
+        first_page = "#{pages_dir}/node_1.htm" # ends with node_1.html
+        page = WebPageTool.retrieve_content first_page #Nokogiri::HTML(open(first_page))
+        
+        page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
+            links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , :page_title => node.content.gsub("\r\n", "") }
+        end
+
+        #puts links_to_titles
+        return links_to_titles
+    end
+
+
+    # invar:  page, a one entry of link-to-page_title mapping
+    # outvar: hash, a link-to-page_title mapping
+    def self.find_articles_links(page_link)
+        links_articles_to_titles = []
+
+        page = WebPageTool.retrieve_content page_link
+
+        page.parser.xpath("//div[@id='btdh']//a").each do |node|
+            # puts node['href'] ; puts node.content;
+            links_articles_to_titles << { :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
+                                         :aritcle_title => node.content.content.gsub("\r\n", " ") }
+        end
+
+        return links_articles_to_titles
+    end
+
+
 
     # invar date is supposed to be like '2012-10-26'
     def self.download_for_date(date=DateTime.now)
@@ -116,10 +147,10 @@ class XinminDailyCollector
         # check if date is before today's afternoon, newspaper is supposed to be published, otherwise not available
         today = DateTime.now
         avail_hour = 17
-        avail_time = DateTime::new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
+        avail_time = DateTime.new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
 
         if DateTime.parse(date) < avail_time
-            grab_news_for_date(avail_time)
+            self.grab_news_for_date(avail_time)
         end
     end
 
@@ -187,6 +218,8 @@ end
 
 
 if __FILE__ == $0
+    
+=begin
     s = "上海交通口腔医学院"
     puts s.has_edu_organization?
     
@@ -194,5 +227,18 @@ if __FILE__ == $0
     has_edu_organization?(s).each do |item|
        puts "-->#{item}"
     end
+
+=end 
+    
+    # -----  page and article grabbing
+    #pages_links = XinminDailyCollector.find_pages_links(DateTime.new(2012,10,28))
+ 
+    #page1 = pages_links.keys[0]
+    #puts page1
+    
+    #articles_links = XinminDailyCollector.find_articles_links page1
+    #puts articles_links
+    
+    puts  XinminDailyCollector.daily_news_links(DateTime.new(2012,10,28))
     
 end

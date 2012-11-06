@@ -89,13 +89,13 @@ class XinminDailyCollector
         
         pages.each do |p|
 
-            pages_and_articles << { :page_title => p[:page_link],
+            pages_and_articles << { :page_title => p[:page_title],
                                     :page_link => p[:page_link],
                                     :articles_links => self.find_articles_links(p[:page_link]) }
             
         end
         
-        return pages_and_articles
+        return { :date_of_news =>  date.strftime("%Y-%m-%d"), :pages_links => pages_and_articles }
     end
 
 
@@ -109,7 +109,7 @@ class XinminDailyCollector
     #      http://xmwb.xinmin.cn/html/2012-10/28/node_3.htm
     def self.find_pages_links(date)
         links_to_titles = []
-        pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.month}/#{date.day}"
+        pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.strftime('%m')}/#{date.strftime('%d')}"
     
         first_page = "#{pages_dir}/node_1.htm" # ends with node_1.html
         page = WebPageTool.retrieve_content first_page #Nokogiri::HTML(open(first_page))
@@ -133,7 +133,7 @@ class XinminDailyCollector
         page.parser.xpath("//div[@id='btdh']//a").each do |node|
             # puts node['href'] ; puts node.content;
             links_articles_to_titles << { :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
-                                         :aritcle_title => node.content.content.gsub("\r\n", " ") }
+                                         :aritcle_title => node.content.gsub("\r\n", " ") }
         end
 
         return links_articles_to_titles
@@ -239,6 +239,6 @@ if __FILE__ == $0
     #articles_links = XinminDailyCollector.find_articles_links page1
     #puts articles_links
     
-    puts  XinminDailyCollector.daily_news_links(DateTime.new(2012,10,28))
+    puts  XinminDailyCollector.daily_news_links(DateTime.new(2012,11,05))
     
 end

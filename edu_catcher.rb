@@ -233,13 +233,17 @@ end
 # * tokenize by sentence
 # 
 def find_addr_in_article( article)
-    ss = article.split(%r{；|，|。”|\s+|。})  # Chinese sentence period.
+    ss = article.split(%r{；|，|、|。”|　|。})  # Chinese sentence period.
     
     potential_address = []
     ss.each do |s|
         s.strip!
         addr = find_chinese_addr(s)
-        potential_address << [:addr => addr, :context => s] if addr
+
+        if addr && addr.size > 0
+            addr[0].strip!
+            potential_address << [:addr => addr[0], :context => s] 
+        end
     end
     
     return potential_address
@@ -250,35 +254,40 @@ end
 # TODO: simple impl., assuming only one address appeared, can't handle two addresses yet.
 # TODO: may need NLP because text before the road name is mistakenly treated as part of the road name.
 def find_chinese_addr(str)
-    levels = ["市","区","路","街","巷","弄","里","号","號","室"]
+    levels = ["省","市","岛",
+              "区","县","湾","村",
+              "路","街","巷","小区","弄","里",
+              "号","號","室"]
     
     # the loop is designed to do that ...
     # once a character in "levels" is found, try to find more detailed address with later charcters in "levels"(can bypass missing levels).
     
     regx_valid = ""
     regx_test = ""
+    used_level = 0  # assuming addr is useless if only has one level
     while (addr_level = levels.shift) != nil
         # assuming in the context of address, some levels requires numbers!
         if addr_level =~ /号|號|室/
             if regx_valid == ""  # assuming address can't be valid with only these '[号|號|室]' info
                 return nil
             else 
-                regx_test = regx_valid + "\d+#{addr_level}"  ; # puts  "regx_test     [ #{regx_test} ]"
+                regx_test = regx_valid + "\\d+#{addr_level}"  ; # puts  "regx_test     [ #{regx_test} ]"
             end
         else 
-            regx_test = regx_valid + "?*#{addr_level}"  ; # puts  "regx_test     [ #{regx_test} ]"        
+            regx_test = regx_valid + "\\S+#{addr_level}"  ; # puts  "regx_test     [ #{regx_test} ]"
         end
         
         
         if str.scan(Regexp.new(regx_test)).size > 0
             regx_valid = regx_test
+            used_level += 1
         else
             next
         end
         
     end
     
-    if regx_valid.size > 0
+    if regx_valid.size > 0 and used_level > 1
         # puts regx_valid; puts str; puts "---------------"
         return str.scan(Regexp.new(regx_valid))
     else
@@ -366,15 +375,20 @@ if __FILE__ == $0
     
     # content grabbing and text processing
 =begin
-=end    
     
-    poi = [];
+=end    
+    all_cnt = 0
+    poi_cnt = 0
+    page_cnt = 0
+    poi = []
     articles_links = []
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,11,20))
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,11,21))
     # -- make array of hash with title link
     links_json[:pages_links].each do |page|
+        page_cnt +=1
+        break if page_cnt > 24
         page[:articles_links].each do |article|
-            puts "[INFO] Processing #{article[:article_title]} from #{article[:article_link]}"
+            puts "[INFO] Processing #{article[:article_title]} from #{article[:article_link]}" ; all_cnt+=1;
             raw = WebPageTool.retrieve_content(article[:article_link])
             article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
             
@@ -383,7 +397,7 @@ if __FILE__ == $0
             if addrs.size > 0
                 article[:addresses] = addrs
                 
-                poi << article
+                poi << article; poi_cnt += 1
             end
             #puts page[:text]
             #puts "----------------------"
@@ -392,14 +406,16 @@ if __FILE__ == $0
 
 
     puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-     
-    poi.each do | h |
-        puts h[:aritcle_title]
-        puts h[:article_link]
-        puts h[:addresses]
-        puts "---------------------------"
-    end
+    puts " #{poi_cnt} of #{all_cnt} can potential geo-tagged"
     
+   File.open("news.txt", "w") do |f |
+    poi.each do | h |
+        f.puts h[:aritcle_title]
+        f.puts h[:article_link]
+        f.puts h[:addresses]
+        f.puts "---------------------------"
+    end
+   end
 
     
     

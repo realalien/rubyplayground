@@ -300,8 +300,99 @@ end
 
 
 # -------------------------------------------------------------
-#
+# Given a well-intended webpage(e.g. ), find the div tag with most content.
+# assuming it has the most useful content for analysis, cut the job of xpath search
+
+# NOTE: target English websites
 # -------------------------------------------------------------
+
+# http://stackoverflow.com/questions/2465032/how-can-unwanted-tags-be-removed-from-html-using-nokogiri
+module Filter
+    def remove_tags!(*list)  # _preserve_content
+        xpath('.//*').each do |element|
+            if list.include?(element.name)
+                element.children.reverse.each do |child|
+                    # child_clone = child.clone
+                    # element.add_next_sibling child_clone
+                    child.unlink
+                end
+                element.unlink
+            end
+        end
+    end
+    
+    def remove_non_p_tags!  # _preserve_content
+        xpath('.//*').each do |element|
+            if "p" != (element.name) 
+                element.children.reverse.each do |child|
+                    # child_clone = child.clone
+                    # element.add_next_sibling child_clone
+                    child.unlink
+                end
+                element.unlink
+            end
+        end
+    end
+    
+end
+
+class Nokogiri::XML::Element
+    include Filter
+end
+
+class Nokogiri::XML::NodeSet
+    include Filter
+end
+
+
+require 'sanitize'
+
+def choose_by_p_tag_under_div(doc)
+    
+end
+
+def choose_by_sanitize_text_under_div(doc)
+    
+end
+
+def guess_content_of_page(content)
+    doc = nil
+    if  content.is_a? String
+        doc = Nokogiri::HTML(content)
+    elsif content.is_a? Mechanize::Page
+        doc = Nokogiri::HTML(content.content)
+    elsif content.is_a? Nokogiri::HTML::Document
+        doc = content
+    end
+    
+    if doc
+        nodes = doc.xpath "//div[not(*[descendant::div]) ]"
+        
+        #"//div[not(following-sibling::*[descendant::div]) and not(preceding-sibling::*[ancestor::div]) and not(preceding-sibling::*[descendant::script])]"
+        #a = nodes.collect{ |e| e if e.content.gsub(/\s*/,"") != "" }
+        #a = nodes.map(&:content).reject!{|e| e.gsub(/\s*/,"") == "" }
+        #nodes.each_with_index do | e,i|
+        #    puts e ; puts "------------------"
+        #    e.remove_non_p_tags!
+        #end
+        
+        
+        
+        
+        clean_divs = nodes
+                 .map(&:content)
+        .map{|e| Sanitize.clean(e) ; e.gsub!(/\s*/,"") ; puts "#{e.class}..#{e.length}....." ;e  }# puts "#{e.class}..#{e.length}....." ;
+                 .sort{ |a,b| a.length <=> b.length}.reverse
+        
+        if clean_divs.size > 0
+            clean_divs.at(0)
+            #puts clean_divs.class
+            #puts "Total : #{clean_divs.size}"
+        else
+            nil
+        end
+    end
+end
 
 
 
@@ -369,14 +460,28 @@ if __FILE__ == $0
     #puts articles_links
     
     puts  XinminDailyCollector.daily_news_links(DateTime.new(2012,11,20))
-=end  
+ 
+ 
+=end    
+    # ---- test of guess_content_of_page
+    #link = "http://blog.twitter.com/2012/11/search-for-new-perspective.html"
+    #page = WebPageTool.retrieve_content link
+    
+    
+    # -----
+    f = File.open("twitter_blog.html") ; page = Nokogiri::HTML(f) ; f.close
+    
+    #link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm"
+    #page = WebPageTool.retrieve_content link
+    puts guess_content_of_page page
+  
 
     
     
     # content grabbing and text processing
 =begin
     
-=end    
+    
     all_cnt = 0
     poi_cnt = 0
     page_cnt = 0
@@ -417,6 +522,11 @@ if __FILE__ == $0
     end
    end
 
+=end
+    
+    
+    
+    
     
     
 end

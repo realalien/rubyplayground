@@ -348,11 +348,34 @@ end
 require 'sanitize'
 
 def choose_by_p_tag_under_div(doc)
+    nodes = doc.xpath "//div[not(*[descendant::div]) ]"
     
+    clean_divs = nodes.map{|e| e.remove_non_p_tags!  ;  e }  # e.remove_non_p_tags! ; puts "#{e} ------";
+                      .map(&:content)
+                      .sort{ |a,b| a.length <=> b.length}.reverse
+    
+    if clean_divs.size > 0
+         #puts clean_divs.at(0);  #puts "Total : #{clean_divs.size}"
+        clean_divs.at(0)
+    else
+        nil
+    end
 end
 
 def choose_by_sanitize_text_under_div(doc)
+    nodes = doc.xpath "//div[not(*[descendant::div]) ]"
     
+    puts nodes
+    clean_divs = nodes.map(&:content)
+    .map{|e| Sanitize.clean(e) ; e.gsub!(/\s+/, "") ; e  }  # puts "#{e.class}..#{e.length}....." ;
+                      .sort{ |a,b| a.length <=> b.length}.reverse
+    
+    if clean_divs.size > 0
+        # puts clean_divs.at(0); puts "<<<<<<<"
+        clean_divs.at(0)
+    else
+        nil
+    end
 end
 
 def guess_content_of_page(content)
@@ -365,31 +388,18 @@ def guess_content_of_page(content)
         doc = content
     end
     
+    
+    # TODO: still unsafe, need human intervention! IDEA: compare with page title content!(safe-enough?)
     if doc
-        nodes = doc.xpath "//div[not(*[descendant::div]) ]"
+        r = choose_by_p_tag_under_div(doc.clone)
         
-        #"//div[not(following-sibling::*[descendant::div]) and not(preceding-sibling::*[ancestor::div]) and not(preceding-sibling::*[descendant::script])]"
-        #a = nodes.collect{ |e| e if e.content.gsub(/\s*/,"") != "" }
-        #a = nodes.map(&:content).reject!{|e| e.gsub(/\s*/,"") == "" }
-        #nodes.each_with_index do | e,i|
-        #    puts e ; puts "------------------"
-        #    e.remove_non_p_tags!
-        #end
-        
-        
-        
-        
-        clean_divs = nodes
-                 .map(&:content)
-        .map{|e| Sanitize.clean(e) ; e.gsub!(/\s*/,"") ; puts "#{e.class}..#{e.length}....." ;e  }# puts "#{e.class}..#{e.length}....." ;
-                 .sort{ |a,b| a.length <=> b.length}.reverse
-        
-        if clean_divs.size > 0
-            clean_divs.at(0)
-            #puts clean_divs.class
-            #puts "Total : #{clean_divs.size}"
-        else
-            nil
+        if !r || r.gsub(/\s+/,"") == ""
+            puts ">>>>>>>> select by choose_by_sanitize_text_under_div"
+            r = choose_by_sanitize_text_under_div(doc.clone) ;            
+            r
+        else 
+            puts ">>>>>>>> select by choose_by_p_tag_under_div"
+            r 
         end
     end
 end
@@ -469,10 +479,9 @@ if __FILE__ == $0
     
     
     # -----
-    f = File.open("twitter_blog.html") ; page = Nokogiri::HTML(f) ; f.close
+    #f = File.open("twitter_blog.html") ; page = Nokogiri::HTML(f) ; f.close
     
-    #link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm"
-    #page = WebPageTool.retrieve_content link
+    link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm" ; page = WebPageTool.retrieve_content link
     puts guess_content_of_page page
   
 

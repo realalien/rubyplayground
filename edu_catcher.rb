@@ -481,14 +481,14 @@ if __FILE__ == $0
     # -----
     #f = File.open("twitter_blog.html") ; page = Nokogiri::HTML(f) ; f.close
     
-    link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm" ; page = WebPageTool.retrieve_content link
-    puts guess_content_of_page page
+    #link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm" ; page = WebPageTool.retrieve_content link
+    #puts guess_content_of_page page
   
 
     
     
     # content grabbing and text processing
-=begin
+# =begin
     
     
     all_cnt = 0
@@ -496,7 +496,7 @@ if __FILE__ == $0
     page_cnt = 0
     poi = []
     articles_links = []
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,11,21))
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,11,26))
     # -- make array of hash with title link
     links_json[:pages_links].each do |page|
         page_cnt +=1
@@ -531,7 +531,7 @@ if __FILE__ == $0
     end
    end
 
-=end
+# =end
     
     
     

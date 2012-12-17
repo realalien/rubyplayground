@@ -85,8 +85,8 @@ if __FILE__ == $0
     # TODO: find the efficient way for grouping data based on related models(commentors' sex, geo, jobs, educations ).
      
     # --> get user's status
-    #user = $client.user_show_by_screen_name("何帆")
-    #puts user.inspect
+    user = $client.user_show_by_screen_name("李开复")
+    puts user.inspect
     #user.status                                # latest status
     #sts = $client.statuses(user.id)             # last few status, a cursor!
     # --> get all comments from one status of the target user

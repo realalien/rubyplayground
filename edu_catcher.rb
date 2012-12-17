@@ -394,11 +394,11 @@ def guess_content_of_page(content)
         r = choose_by_p_tag_under_div(doc.clone)
         
         if !r || r.gsub(/\s+/,"") == ""
-            puts ">>>>>>>> select by choose_by_sanitize_text_under_div"
+            #puts ">>>>>>>> select by choose_by_sanitize_text_under_div"
             r = choose_by_sanitize_text_under_div(doc.clone) ;            
             r
         else 
-            puts ">>>>>>>> select by choose_by_p_tag_under_div"
+            #puts ">>>>>>>> select by choose_by_p_tag_under_div"
             r 
         end
     end

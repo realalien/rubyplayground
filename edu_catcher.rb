@@ -147,7 +147,7 @@ class XinminDailyCollector
         page.parser.xpath("//div[@id='btdh']//a").each do |node|
             # puts node['href'] ; puts node.content;
             links_articles_to_titles << { :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
-                                         :aritcle_title => node.content.gsub("\r\n", " ") }
+                                         :article_title => node.content.gsub("\r\n", " ") }
         end
 
         return links_articles_to_titles
@@ -536,7 +536,7 @@ if __FILE__ == $0
     
 =begin
   # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
-=end 
+
     
 require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
     
@@ -567,10 +567,25 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
         end
      end
  end
-
+=end 
     
     
     
+=begin
+ 
+ # -------  command based xinmin article reader, not true, just listing
+ # TODO: navigation between pages,  select article by number
+=end
     
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,18))
+    links_json[:pages_links].each do |page|
+        puts "----------  #{page[:page_title]}  ---------"
+    
+        page[:articles_links].each do |art|
+            puts "#{art[:article_title]} : #{art[:article_link]}"
+            
+        end
+    
+    end
     
 end

@@ -487,16 +487,15 @@ if __FILE__ == $0
 
     
     
-    # content grabbing and text processing
-# =begin
-    
+    # ----- for fun: collect address infos from one-day newspaper
+=begin    
     
     all_cnt = 0
     poi_cnt = 0
     page_cnt = 0
     poi = []
     articles_links = []
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,11,26))
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,17))
     # -- make array of hash with title link
     links_json[:pages_links].each do |page|
         page_cnt +=1
@@ -531,8 +530,44 @@ if __FILE__ == $0
     end
    end
 
-# =end
+=end
     
+    
+    
+=begin
+  # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
+=end 
+    
+require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
+    
+ links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,16))
+ links_json[:pages_links].each do |page|
+     
+     #puts page[:page_title].gsub(/\s/,"")
+     if  page[:page_title] =~ /夜光杯/ 
+         page[:articles_links].each do |article|
+             puts "[INFO] Processing #{article[:article_title]} from #{article[:article_link]}" ;
+             raw = WebPageTool.retrieve_content(article[:article_link])
+             article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+             
+             tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
+             
+             if tokens.size > 0
+                 author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
+                 puts "Detecting weibo account for #{author}"
+                 begin 
+                   user = $client.user_show_by_screen_name(author).data
+                   puts "#{user['screen_name']}  #{user['id']} " 
+                 rescue 
+                   puts "#Couldn't find weibo info by screen_name #{author}"  
+                 end    
+                    
+                 sleep 2
+            end
+        end
+     end
+ end
+
     
     
     

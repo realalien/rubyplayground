@@ -7,6 +7,8 @@ require 'date'
 require 'nokogiri'
 require 'json'
 
+require File.join(File.dirname(__FILE__),"./util.rb")
+
 # TODO: web related exception handling.
 class XinminDailyCollector
 
@@ -45,8 +47,11 @@ class XinminDailyCollector
     first_page = "#{pages_dir}/node_1.htm" # ends with node_1.html
     page = WebPageTool.retrieve_content first_page #Nokogiri::HTML(open(first_page))
     
-    page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
-    links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , :page_title => node.content.gsub("\r\n", "") }
+    
+    if page
+      page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
+        links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , :page_title => node.content.gsub("\r\n", "") }
+      end
     end
 
     #puts links_to_titles
@@ -61,10 +66,13 @@ class XinminDailyCollector
 
     page = WebPageTool.retrieve_content page_link
 
-    page.parser.xpath("//div[@id='btdh']//a").each do |node|
-    # puts node['href'] ; puts node.content;
-    links_articles_to_titles << { :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
-       :article_title => node.content.gsub("\r\n", " ") }
+    if page
+      page.parser.xpath("//div[@id='btdh']//a").each do |node|
+      # puts node['href'] ; puts node.content;
+      links_articles_to_titles << { 
+          :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
+          :article_title => node.content.gsub("\r\n", " ") }
+      end
     end
 
     return links_articles_to_titles
@@ -81,7 +89,7 @@ class XinminDailyCollector
     avail_time = DateTime.new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
 
     if DateTime.parse(date) < avail_time
-    self.grab_news_for_date(avail_time)
+      self.grab_news_for_date(avail_time)
     end
   end
 
@@ -212,7 +220,7 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
  # TODO: navigation between pages,  select article by number
 =end
     
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,19))
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,20))
     links_json[:pages_links].each do |page|
         puts "----------  #{page[:page_title]}  ---------"
     
@@ -224,14 +232,6 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
     end
     
 end
-
-
-
-  
-end
-
-
-
 
 
 

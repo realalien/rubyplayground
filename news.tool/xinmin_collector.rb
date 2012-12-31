@@ -12,12 +12,6 @@ require File.join(File.dirname(__FILE__),"./util.rb")
 # TODO: web related exception handling.
 class XinminDailyCollector
 
-  
-  def self.grab_newspaper_on_date(date)
-    
-
-  end
-
   def self.daily_news_links(date)
     pages_and_articles = []
     pages = self.find_pages_links(date)

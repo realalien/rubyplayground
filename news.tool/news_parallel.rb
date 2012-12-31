@@ -63,6 +63,8 @@ if __FILE__ == $0
 # 1.0  find similar 'sections' between two newspapers, e.g. xm, whb, so that we can limit the text parsing context.
 
   s = report_similar_sections(:XinMinDaily, :LaoDongDaily)
+    # [:XinMinDaily, :LaoDongDaily].similar_sections  # TODO: what's best practices in extending array?
+    
     
 
     # Addon: incorporate manul/human intervention for strong connection based on similarity.    

@@ -64,9 +64,9 @@ if __FILE__ == $0
 
   s = report_similar_sections(:XinMinDaily, :LaoDongDaily)
     # [:XinMinDaily, :LaoDongDaily].similar_sections  # TODO: what's best practices in extending array?
-    
-    
+    #[:XinMinDaily, :LaoDongDaily].similar_articles(nil)
 
+  
     # Addon: incorporate manul/human intervention for strong connection based on similarity.    
     
     

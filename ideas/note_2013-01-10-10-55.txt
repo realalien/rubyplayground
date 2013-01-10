@@ -1,0 +1,16 @@
+
+raw =<<DOC 
+Cerf also pictures a not-so-distant future where a visitor walks into a hotel room and his smartphone communicates with the TV screen so he can read email or text on a bigger screen.
+
+Smartphones will become even smarter, he said, and will know where we are and what we should be doing. "Our phones could tell us to adapt our plans according to conditions that might have changed since we made those plans," he said.
+DOC
+
+
+# STEP: make a classification system to break one idea into different levels
+# e.g. one idea can be a 'app feature', 'a user case scenario', 'a platform idea', 'a potential feature can be tranformed into different use(should already knowledging the missing points on a chain of a WIP product/workflow.
+
+
+# STEP: how to caputre the futuristic design into workable project?
+
+
+

@@ -47,7 +47,10 @@ class Dog
 		# since there is no user profile API from dianping, we need either read from local db or grab web page
 		candidates = DianPingProfileManager.search_by_user_name name 
 		candidates_by_sns[s] = candidates if candidates.size > 0
-        
+      elsif s.to_s.downcase == "douban"
+          # since there is no user profile API from dianping, we need either read from local db or grab web page
+          candidates = DoubanProfileManager.search_by_user_name name 
+          candidates_by_sns[s] = candidates if candidates.size > 0  
 	  else 
 		puts "[INFO] #{s.to_s} API is not ready yet!"
 		not_ready << s
@@ -68,7 +71,7 @@ if __FILE__ == $0
 # given a random name, eg. from newspaper reporter, find the related sns website
 random_name = "milo"  # this text probably gives a collection of user profiles 
 dog = Dog.new
-candidates = dog.sniff_profiles random_name, :weibo, :twitter #hash
+candidates = dog.sniff_profiles random_name, :weibo, :douban #hash
 
 
 

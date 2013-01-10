@@ -1,3 +1,4 @@
+
 # --------------------- grab the content on target
 
 # NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first

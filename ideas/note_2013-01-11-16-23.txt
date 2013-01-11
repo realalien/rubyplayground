@@ -1,0 +1,26 @@
+
+#model after the projects by this person:
+#http://knightlab.northwestern.edu/site/2012/11/26/new-team-member-director-of-software-engineering-2/
+
+
+# idea: separate the problem domain by 
+# crime, elections and schools applications 
+# http://www.chicagotribune.com/news/politics/localelections/
+# http://schools.chicagotribune.com/
+# 
+
+
+# tip: find roadmap of website for general overview of info structure design
+# sug: write change listers to be notified by the source change
+# sug: related sites  (3rd tools,  pages links count/aggregate)
+# sug: related people (page text parsing)
+
+
+
+
+
+
+
+
+
+

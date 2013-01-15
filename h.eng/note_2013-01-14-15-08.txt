@@ -1,0 +1,9 @@
+apps based on DIY processing of cooking/baking
+apps integrating the comercial products recomendation/ cost-benefit analysis, made by group or by indie 
+apps monitoring the existing mass-produced products
+app integrating the DIY monitoring tools
+
+app backend service including photo, video, sounds, which should delegate other authorized service!
+
+
+

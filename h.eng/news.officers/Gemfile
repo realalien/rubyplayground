@@ -1,0 +1,7 @@
+source 'http://ruby.taobao.org/'
+
+gem 'rake'
+gem 'mongoid', '=2.4.10'
+gem 'bson_ext'
+
+

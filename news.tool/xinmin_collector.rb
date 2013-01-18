@@ -1,4 +1,4 @@
-
+#encoding: UTF-8
 # --------------------- grab the content on target
 
 # NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first
@@ -18,12 +18,12 @@ class XinminDailyCollector
     pages = self.find_pages_links(date)
   
     pages.each do |p|
-      pages_and_articles << { :page_title => p[:page_title],
+      pages_and_articles << { 'page_title' => p['page_title'],
                               :page_link => p[:page_link],
-                              :articles_links => self.find_articles_links(p[:page_link]) }
+                              'articles_links' => self.find_articles_links(p[:page_link]) }
     end
   
-    return { :date_of_news =>  date.strftime("%Y-%m-%d"), :pages_links => pages_and_articles }
+    return { :date_of_news =>  date.strftime("%Y-%m-%d"), 'pages_links' => pages_and_articles }
   end
 
 
@@ -45,7 +45,7 @@ class XinminDailyCollector
     
     if page
       page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
-        links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , :page_title => node.content.gsub("\r\n", "") }
+        links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , 'page_title' => node.content.gsub("\r\n", "") }
       end
     end
 
@@ -65,8 +65,8 @@ class XinminDailyCollector
       page.parser.xpath("//div[@id='btdh']//a").each do |node|
       # puts node['href'] ; puts node.content;
       links_articles_to_titles << { 
-          :article_link => "#{File.dirname(page_link)}/#{node['href']}" , 
-          :article_title => node.content.gsub("\r\n", " ") }
+          'article_link' => "#{File.dirname(page_link)}/#{node['href']}" , 
+          'article_title' => node.content.gsub("\r\n", " ") }
       end
     end
 
@@ -137,12 +137,12 @@ if  __FILE__ == $0
   articles_links = []
   links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,17))
   # -- make array of hash with title link
-  links_json[:pages_links].each do |page|
+  links_json['pages_links'].each do |page|
       page_cnt +=1
       break if page_cnt > 24
-      page[:articles_links].each do |article|
-          puts "[INFO] Processing #{article[:article_title]} from #{article[:article_link]}" ; all_cnt+=1;
-          raw = WebPageTool.retrieve_content(article[:article_link])
+      page['articles_links'].each do |article|
+          puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ; all_cnt+=1;
+          raw = WebPageTool.retrieve_content(article['article_link'])
           article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
           
           addrs = find_addr_in_article(article[:text])
@@ -164,7 +164,7 @@ if  __FILE__ == $0
   File.open("news.txt", "w") do |f |
     poi.each do | h |
         f.puts h[:aritcle_title]
-        f.puts h[:article_link]
+        f.puts h['article_link']
         f.puts h[:addresses]
         f.puts "---------------------------"
     end
@@ -181,13 +181,13 @@ if  __FILE__ == $0
 require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
     
  links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,16))
- links_json[:pages_links].each do |page|
+ links_json['pages_links'].each do |page|
      
-     #puts page[:page_title].gsub(/\s/,"")
-     if  page[:page_title] =~ /夜光杯/ 
-         page[:articles_links].each do |article|
-             puts "[INFO] Processing #{article[:article_title]} from #{article[:article_link]}" ;
-             raw = WebPageTool.retrieve_content(article[:article_link])
+     #puts page['page_title'].gsub(/\s/,"")
+     if  page['page_title'] =~ /夜光杯/ 
+         page['articles_links'].each do |article|
+             puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ;
+             raw = WebPageTool.retrieve_content(article['article_link'])
              article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
              
              tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
@@ -215,13 +215,23 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
  # TODO: navigation between pages,  select article by number
 =end
     
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,20))
-    links_json[:pages_links].each do |page|
-        puts "----------  #{page[:page_title]}  ---------"
+    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2013,1,16))
+    puts links_json
+    puts "-------------------------------"
+    useful = links_json['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
+    puts useful
+    puts "-------------------------------"
+    useful.each do |page|
+        puts page 
+        puts "----------  #{page['page_title']}  ---------"
     
-        page[:articles_links].each do |art|
-            puts "#{art[:article_title]} : #{art[:article_link]}"
+        page['articles_links'].each do |art|
+            puts "#{art['article_title']} : #{art['article_link']}"
             
+            #raw = WebPageTool.retrieve_content(art['article_link'])
+            #art[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+            #puts art[:text]
+            #puts "-------------------------------"
         end
     
     end

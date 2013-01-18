@@ -19,7 +19,7 @@ xinmin_daily  = "xinmin_daily"
 # TODO: not a nice place to put the configuration
 Mongoid.configure do |config|
     name = DATABASE_NAME
-    host = "localhost"
+    host = "127.0.0.1"
     port = 27017
     
     config.allow_dynamic_fields = true
@@ -90,9 +90,11 @@ module XinMinToolsets
     # Q: how to open String class and encasulate it into a module?
     
     
-    def sentences_with_people_names(str)        
+    def sentences_with_people_names(str, criterias)
+        ss = []
+        # NOTE: would array#inject tastes better?
         candidates = str.split(%r{；|。”|。}).collect do |s|
-            s.has_gov_leaders?
+            ss << s if s.follow_criterias? criterias
         end
     end
 end
@@ -152,7 +154,8 @@ if  __FILE__ == $0
 # 2.0 text mining, count characters repeats
 
     # ---------------  test 1, find potential name
-    
+
+=begin
     a = "市委副书记殷一璀主持会议，市委常委、政法委书记丁薛祥作工作报告。"
     puts "#{a} has_gov_leaders? \n... #{a.has_gov_leaders?}"
     b = "切实加强政法队伍建设，真正当好中国特色社会主义事业的建设者和捍卫者。"
@@ -163,5 +166,19 @@ if  __FILE__ == $0
     puts "a.fulfill? w ... #{a.follow_criterias?(['has_gov_leaders'])}"
     puts "a.fulfill?  ... #{a.follow_criterias?(['has_not_defined?'])}"
     puts "-------------------"
-
+=end
+    
+    
+=begin 
+=end
+    
+    puts "Starting..."
+    a = XinMinDailyArticles.find("id"=> "50f7b3aef1ce4029df000008").first
+ 
+    if a
+       pp a
+    else
+       puts "Not found."
+    end
+ 
 end

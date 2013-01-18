@@ -1,0 +1,77 @@
+# notes on 
+# http://www.knightfoundation.org/press-room/press-release/knight-foundation-media-innovation-contest-announc/
+
+
+
+# -----------------
+2nd iter
+
+zeega, collab documentaries, probably the most eye catching, TODO: make some video collections for "梅一" neighbourhood for lack of public space, RESERCH: construction company and their progress
+
+
+panda, news collect and reengineer, the most alike prj like my own, TODO: start to create repo --->  to create CRM for recording data experimented --> refine process
+
+
+state decode:  create an automated system to create static data knowledge
+
+pedoronio:  yes, organization info collections play with news collection!
+
+
+
+# -----------------
+# DocumentCloud
+idea: get NER info from read. 
+app design: highlight the ner, people organization
+user interaction:  if NER not recognized, should allow user to easily select the text and submit a role(person act in org.) info, probably to use person cards, organization cards (for heuristic study and digging) to see detailed info or help readers to get a better ideas of undercover!
+
+
+# FrontlineSMS
+research: how to reach local people through media and establish connections, social opera play?
+
+
+# state decode
+definition, cross-ref, commenting, tagging, decent design and humane typograhy
+make law textualized, discussable and understandable
+
+
+
+#iWitness
+aggregate social media by time and places, people at the scene providing multimedia 
+new ways of telling stories and citizens contribute
+
+
+#zeega
+collaborative and interactive documetaries, empower individual to give power to others
+
+#poderopedia
+track links between powerful people, chile, links busizness parts,  !!!! 
+
+#NextDrop
+water utility to nitofy
+
+#spending stories
+how tax is spent, how well do that.  Process of discussion and use
+
+# public lab
+local env. into the tech and people into use. Env. info production, low cost, support local expertise
+
+#scraperWiki
+analyse data, bargain data? notification
+
+#Tizanio E
+
+
+# OPenblock  
+# sustain, public record, digitize 
+
+
+#swiftRiver
+
+
+#panda
+collect everyday, compare  !!!!
+
+
+
+
+

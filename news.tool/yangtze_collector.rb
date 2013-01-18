@@ -38,8 +38,9 @@ class YangtzeDailyCollector
             pages << one_page unless one_page.empty?
             # refill
             one_page = {}
-            one_page = { :page_link => "#{pages_dir}/#{row_links[0]['href']}"  ,
+            one_page = { :page_link => "#{pages_dir}/#{row_links[0]['href'].gsub('./','')}"  ,
                          :page_title => node.content.gsub("\r\n", "") }
+  
           else
             articles_hash = []
             row_links = node.xpath(".//a") # recollect
@@ -53,8 +54,8 @@ class YangtzeDailyCollector
 
         
       end # if index_page
-      puts "pages total #{pages.size}"
-      puts pages
+      #puts "pages total #{pages.size}"
+      #puts pages
     end  # each index page
 
   
@@ -63,13 +64,76 @@ class YangtzeDailyCollector
     return { :date_of_news =>  date.strftime("%Y-%m-%d"), :pages_links => pages }
   end
 
-  
 
+
+  def similar_word
+    
+  end
+  
+end
+
+def lcs(a, b)
+  lengths = Array.new(a.size+1) { Array.new(b.size+1) { 0 } }
+  # row 0 and column 0 are initialized to 0 already
+  a.split('').each_with_index { |x, i|
+    b.split('').each_with_index { |y, j|
+      if x == y
+        lengths[i+1][j+1] = lengths[i][j] + 1
+        else
+        lengths[i+1][j+1] = \
+        [lengths[i+1][j], lengths[i][j+1]].max
+      end
+    }
+  }
+  # read the substring out from the matrix
+  result = ""
+  x, y = a.size, b.size
+  while x != 0 and y != 0
+    if lengths[x][y] == lengths[x-1][y]
+      x -= 1
+      elsif lengths[x][y] == lengths[x][y-1]
+      y -= 1
+      else
+      # assert a[x-1] == b[y-1]
+      result << a[x-1]
+      x -= 1
+      y -= 1
+    end
+  end
+  result.reverse
 end
 
 
 
 if __FILE__ == $0
-  YangtzeDailyCollector.daily_news_links(DateTime.new(2012,12,31))
+  toc = YangtzeDailyCollector.daily_news_links(DateTime.new(2012,12,31))
 
+  
+  page_hashes = []
+  toc[:pages_links].each do | page|
+    page_hashes << page
+  end
+  
+  puts page_hashes
+  
+  
+  similar = {}
+  
+  word = page_hashes.shift
+
+  
+  while page_hashes.size > 0
+    
+    page_hashes.each do | art|
+      s = lcs(word[:page_title].split("：")[1], art[:page_title].split("：")[1])
+      if s and not s.gsub(/\s*/,'').gsub(/·/,'').empty? and s.size > 1
+        similar[s] ||= []
+        title_name = art[:page_title].split("：")[0]
+        similar[s] << title_name unless similar[s].include?(title_name)
+      end
+    end
+    word = page_hashes.shift
+  end
+  
+  puts similar
 end

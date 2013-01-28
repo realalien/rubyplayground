@@ -1,0 +1,6 @@
+track users from baidu community
+e.g. from the web page, http://zhidao.baidu.com/question/508540180.html
+* the query string stands for the point of interst
+* the ltwmztm is a link to a real people, also other noise people who don't give best answer including me!
+* from baidu category system,  the page content can be classified/index under some kind of system
+

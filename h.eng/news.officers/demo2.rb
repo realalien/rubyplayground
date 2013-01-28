@@ -96,6 +96,8 @@ module XinMinToolsets
         candidates = str.split(%r{；|。”|。}).collect do |s|
             ss << s if s.follow_criterias? criterias
         end
+      
+        ss
     end
 end
 
@@ -105,7 +107,7 @@ end
 if  __FILE__ == $0
 
 =begin
- 
+
 # 0.1 Setup local database storage for one news agent!
 
 # TODO: create different db for different news agents, it might be easier(less data come&forth) when mining one news agent.
@@ -140,9 +142,9 @@ if  __FILE__ == $0
         # TODO: fix-me
         #undefined method `[]' for nil:NilClass (NoMethodError)        from demo2.rb:99:in `each' from demo2.rb 99:in `<main>'
     end
-=end    
     
     
+=end   
     
 
 
@@ -156,6 +158,7 @@ if  __FILE__ == $0
     # ---------------  test 1, find potential name
 
 =begin
+
     a = "市委副书记殷一璀主持会议，市委常委、政法委书记丁薛祥作工作报告。"
     puts "#{a} has_gov_leaders? \n... #{a.has_gov_leaders?}"
     b = "切实加强政法队伍建设，真正当好中国特色社会主义事业的建设者和捍卫者。"
@@ -170,15 +173,35 @@ if  __FILE__ == $0
     
     
 =begin 
-=end
+ # ---------------  test 1, find potential sentences with names
     
-    puts "Starting..."
-    a = XinMinDailyArticles.find("id"=> "50f7b3aef1ce4029df000008").first
- 
+  puts "Starting..."
+  a = XinMinDailyArticles.where(:_id => "50f97432eb9a400fb6000008").first
+  include XinMinToolsets
     if a
-       pp a
+      pp a
+      
+      names = sentences_with_people_names(a['text'], ['has_gov_leaders?'] )
+      names.each_with_index do | s, idx |
+        puts "#{idx} .... #{s}"
+      end
     else
        puts "Not found."
     end
- 
+=end
+  
+  
+=begin
+ #  use python module jieba to tokenize
+=end
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 end

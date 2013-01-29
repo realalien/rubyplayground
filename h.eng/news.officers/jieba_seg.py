@@ -23,12 +23,10 @@ def error404(error):
 
 @route('/jiebacut', method='POST')
 def jieba_cut():
-	print request.data
-	print "----------"
-	text = request.body.get('text')	
+	text = request.query.get('text')	
 	seg_list = jieba.cut(text)
-	response.content_type = "application/json"
-	words = {"result": seg_list }
+	#response.content_type = "application/json"
+	words = {"result": [w for w in seg_list] }
 	return words
 
 run(host='localhost', port=8081, debug=True)

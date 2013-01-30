@@ -11,7 +11,7 @@ require 'mongoid'
 
 require File.join(File.dirname(__FILE__),"../../news.tool/xinmin_collector.rb")
 require File.join(File.dirname(__FILE__),"../../news.tool/util.rb")
-
+require File.join(File.dirname(__FILE__),"nlp_py_svc.rb")
 
 
 DATABASE_NAME = "news_mining"
@@ -99,6 +99,10 @@ module XinMinToolsets
       
         ss
     end
+  
+  # TODO: create a different tokenizer so that the symbols are kept for later use. e.g. quotation mark is important to recognize that someone says sth.
+  
+  
 end
 
 
@@ -192,13 +196,92 @@ if  __FILE__ == $0
   
   
 =begin
- #  use python module jieba to tokenize
+ #  use python module jieba to tokenize(py web service)
 =end
   
   
+=begin
+  # for the time being, use multiple statistic methods to pin down the  NER, (Darned, I should learn the python nlp and ml the thorough way!)
+ 
+ 
+ ＃ better using some dsl, does it looks like a 
+ # e.g.  ners = descrition "count most appears subjects in taggerred words." do 
+ #           listing  
+#     end
+ # e.g   ners = description "potential sentences structures" do
+ #          listing "with symbol 、"
+ #       end 
+ 
+ 
+ 
+ 
+   # ---- tips "count most appeared" 
+  # expected = ["韩正","习近平","殷一璀","丁薛祥","徐麟","尹弘","王培生","张学兵","周太彤","应勇","陈旭"]
+  puts "Starting..."
+  a = XinMinDailyArticles.where("_id" => "50f7b3aef1ce4029df000008").first
+  include XinMinToolsets
+  if a
+    # pp a
+    ws = []
+    names = sentences_with_people_names(a['text'], ['has_gov_leaders?'] )
+    names.each_with_index do | s, idx |
+      puts "#{idx} .... #{s}"
+      ws << PythonNLPService.new.get_jieba_seg(s)["result"]
+    end
+    # dump to file for reuse
+    puts ws.flatten
+    File.open( './words_from_selected_sentences.yaml', 'w' ) do |out|
+      YAML.dump( ws.flatten , out )
+    end
+  else
+    puts "Not found."
+  end
+  # 
+ 
+  
+  puts "Starting..."
+  a = XinMinDailyArticles.where("_id" => "50f7b3aef1ce4029df000008").first
+  include XinMinToolsets
+  if a
+      ws = PythonNLPService.new.get_jieba_seg(a['text'])["result"]
+      File.open( './words_all.yaml', 'w' ) do |out|
+        YAML.dump( ws.flatten , out )
+      end
+  end
+=end  
+  
+  filtered_1 = File.open( 'words_from_selected_sentences.yaml' ) { |yf| YAML::load( yf ) }
+  # puts filtered_1
+  all = File.open( 'words_all.yaml' ) { |yf| YAML::load( yf ) }
+  #puts filtered_1
+  
+  # --- test 'word frequency for ner'
+  # summary: not very useful as main character's name '韩正' only appeared around 3 times, not in the first 15; and also when we enlarge the f 
+  freq = all.inject(Hash.new(0)) { |h,v| h[v] += 1; h }
+  #puts freq
+  #puts "------------------------"
+  sorted_freq = freq.sort_by{|key, value| value}.reverse
+  #puts sorted_freq
+  most_freq_words = sorted_freq.collect{|elem| elem[0]}
+  #puts "------------------------"
+  
+  puts "------- most appeared in articles -------"
+  puts  most_freq_words.first(20)
+  puts "------- selected sentences's words appeared in 'most appeared in articles'-------"
+  puts filtered_1 & most_freq_words.first(20)
   
   
+  # IDEA: keyhole filter
   
+=begin
+ # after reading(with deep level parsing mind) http://xmwb.xinmin.cn/html/2013-01/16/content_2_2.htm
+ # it looks like we can make sth similar to US counterpart of fact check, because in the news, the date is specified (usually first or second date info), quote are marked with quotation marks 
+ # For now, we can just reformat the text using bullet points, making it reader friendly and logic coherent and first-good-impression-of-layout.
+ 
+ 
+ 
+ 
+=end
   
   
   

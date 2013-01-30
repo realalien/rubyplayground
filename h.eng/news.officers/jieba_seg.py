@@ -19,7 +19,7 @@ from bottle import error
 
 @error(404)
 def error404(error):
-    return ''
+    return {"result": [] }
 
 @route('/jiebacut', method='POST')
 def jieba_cut():

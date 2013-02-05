@@ -1,0 +1,1 @@
+to keep the named entity recognition easier in news, use simple array union to find the common words to cut down the info to parse!

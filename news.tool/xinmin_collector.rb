@@ -7,8 +7,38 @@
 require 'date'
 require 'nokogiri'
 require 'json'
+require 'mongoid'
+require 'yaml'
+# http://stackoverflow.com/questions/4980877/rails-error-couldnt-parse-yaml
+YAML::ENGINE.yamler = 'syck'
+
 
 require File.join(File.dirname(__FILE__),"./util.rb")
+
+# Q: any bettre place for configuration  A:
+MONGOID_CONFIG = File.join(File.dirname(__FILE__),"mongoid.yml") 
+Mongoid.load!(MONGOID_CONFIG, :development)
+Mongoid.logger = Logger.new($stdout)
+
+# ------------------------------------------------------------------------------------
+
+# Note: this class is to make the json structure more explicit!
+class XinMinDailyArticlesModelForCollector
+  include Mongoid::Document
+  include Mongoid::Timestamps::Created
+  include Mongoid::Timestamps::Updated  # TODO: it actually mingles with the weibo's data. How to change default column updated_at
+  
+  
+  field :article_title, type: String
+  field :article_link, type: String
+  field :text, type: String
+  field :date_of_news, type: Date
+  
+end
+# ------------------------------------------------------------------------------------
+
+
+
 
 # TODO: web related exception handling.
 class XinminDailyCollector
@@ -23,7 +53,7 @@ class XinminDailyCollector
                               'articles_links' => self.find_articles_links(p[:page_link]) }
     end
   
-    return { :date_of_news =>  date.strftime("%Y-%m-%d"), 'pages_links' => pages_and_articles }
+    return { 'date_of_news' =>  date.strftime("%Y-%m-%d"), 'pages_links' => pages_and_articles }
   end
 
 
@@ -74,7 +104,7 @@ class XinminDailyCollector
   end
 
 
-
+=begin
   # invar date is supposed to be like '2012-10-26'
   def self.download_for_date(date=DateTime.now)
 
@@ -90,6 +120,27 @@ class XinminDailyCollector
 
   def self.grab_news_for_date(datetiem)
   
+  end
+=end
+ 
+
+# Note: it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
+  def self.download_news_for_date(date)
+    # TODO: check if already downloaded or not. 
+    toc = XinminDailyCollector.daily_news_links(date)
+    toc['pages_links'].each do |page|
+    puts "----------  #{page['page_title']}  ---------"
+    
+      page['articles_links'].each do |article|
+        puts "Retrieving #{article['article_title']} : #{article['article_link']}"
+        raw = WebPageTool.retrieve_content(article['article_link'])
+        article['text'] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+        article['date_of_news'] = Date.strptime(toc['date_of_news'], fmt='%Y-%m-%d')
+        #pp art ; puts "-------------------------------"
+        #a = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json) )
+        #a.save!
+      end
+    end
   end
 
 end
@@ -129,15 +180,17 @@ if  __FILE__ == $0
     
 =begin
   # -------------------------  for fun: collect address infos from one-day newspaper ------------------------- 
-    
+  
+   require File.join(File.dirname(__FILE__),"./text_util.rb")
+    puts "starting.."
   all_cnt = 0
   poi_cnt = 0
   page_cnt = 0
   poi = []
   articles_links = []
-  links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,17))
+  links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
   # -- make array of hash with title link
-  links_json['pages_links'].each do |page|
+  links_dict['pages_links'].each do |page|
       page_cnt +=1
       break if page_cnt > 24
       page['articles_links'].each do |article|
@@ -159,7 +212,7 @@ if  __FILE__ == $0
 
 
   puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-  puts " #{poi_cnt} of #{all_cnt} can potential geo-tagged"
+  puts " #{poi_cnt} of #{all_cnt} can  be potentially geo-tagged"
   
   File.open("news.txt", "w") do |f |
     poi.each do | h |
@@ -169,8 +222,8 @@ if  __FILE__ == $0
         f.puts "---------------------------"
     end
   end
-
 =end
+
 
 
 
@@ -180,8 +233,8 @@ if  __FILE__ == $0
     
 require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
     
- links_json = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,16))
- links_json['pages_links'].each do |page|
+ links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,16))
+ links_dict['pages_links'].each do |page|
      
      #puts page['page_title'].gsub(/\s/,"")
      if  page['page_title'] =~ /夜光杯/ 
@@ -213,16 +266,17 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
  
  # -------  command based xinmin article reader, not true, just listing
  # TODO: navigation between pages,  select article by number
-=end
+
     
-    links_json = XinminDailyCollector.daily_news_links(DateTime.new(2013,1,16))
-    puts links_json
+    links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
+    puts links_dict
     puts "-------------------------------"
-    useful = links_json['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
-    puts useful
-    puts "-------------------------------"
-    useful.each do |page|
-        puts page 
+    #useful = links_dict['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
+    #puts useful
+    #puts "-------------------------------"
+    #useful.each do |page|
+     links_dict['pages_links'].each do |page|
+         #puts page 
         puts "----------  #{page['page_title']}  ---------"
     
         page['articles_links'].each do |art|
@@ -235,7 +289,22 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
         end
     
     end
+=end
     
+    
+    
+=begin
+ 
+ ---------------------  test of 'download_news_for_date' methods
+=end
+  
+
+  
+  XinminDailyCollector.download_news_for_date(DateTime.new(2013,2,4))
+  puts "download_news_for_date... DONE!"  
+  
+  
+  
 end
 
 

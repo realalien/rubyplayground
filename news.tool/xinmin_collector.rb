@@ -210,10 +210,10 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
 =end
 
 =begin
- 
+=end
  # -------  command based xinmin article reader, not true, just listing
  # TODO: navigation between pages,  select article by number
-=end
+
     
     links_json = XinminDailyCollector.daily_news_links(DateTime.new(2013,1,16))
     puts links_json
@@ -235,7 +235,9 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
         end
     
     end
-    
+
+  
+  
 end
 
 

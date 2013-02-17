@@ -254,9 +254,9 @@ if  __FILE__ == $0
   # puts filtered_1
   all = File.open( 'words_all.yaml' ) { |yf| YAML::load( yf ) }
   #puts filtered_1
-  
+=begin
   # --- test 'word frequency for ner'
-  # summary: not very useful as main character's name '韩正' only appeared around 3 times, not in the first 15; and also when we enlarge the f 
+  # summary: not very useful as main character's name '韩正' only appeared around 3 times, not among the first 15 most used words;
   freq = all.inject(Hash.new(0)) { |h,v| h[v] += 1; h }
   #puts freq
   #puts "------------------------"
@@ -269,6 +269,12 @@ if  __FILE__ == $0
   puts  most_freq_words.first(20)
   puts "------- selected sentences's words appeared in 'most appeared in articles'-------"
   puts filtered_1 & most_freq_words.first(20)
+=end
+  
+  # --- test 'phrase relations for ner' e.g. name after a job role
+  
+  
+  
   
   
   # IDEA: keyhole filter

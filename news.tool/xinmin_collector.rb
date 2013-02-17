@@ -356,7 +356,7 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
 =end
 
 =begin
- 
+=end
  # -------  command based xinmin article reader, not true, just listing
  # TODO: navigation between pages,  select article by number
 
@@ -382,10 +382,7 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
         end
     
     end
-=end
-    
-    
-    
+
 =begin
  
  ---------------------  test of 'download_news_for_date' methods

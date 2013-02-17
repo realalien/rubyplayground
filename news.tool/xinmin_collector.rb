@@ -34,7 +34,36 @@ class XinMinDailyArticlesModelForCollector
   field :text, type: String
   field :date_of_news, type: Date
   
+  belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
+  
+  validates :article_link,  :uniqueness => {:scope => :pageIndex}
+
 end
+
+# NOTE: 2013.2.17. Considering that more tools are coming to re-process formerly collected data, we need a way to process all articles on particular days, 
+#   also, this objects can also maintain the some information about experiments already applied. 
+class XinMinDailyPageIndexModelForCollector
+  include Mongoid::Document
+  include Mongoid::Timestamps::Created
+  
+  field :page_title, type: String
+  field :page_link, type: String
+  
+   # for use of 'checking downloaded or not', 'quick retrieving  of particular page', WATCH OUT: if missing a page, leave that empty rather than reusing it.
+  field :seq_no, type:Integer
+  field :date_of_news, type: Date
+  
+  scope :on_specific_date, ->(date) { where(:date_of_news.gte => date, :date_of_news.lte => date+1) }
+  scope :with_seq_no, ->(seq) {where(seq_no: seq)}
+  
+  
+  validates :seq_no,  :uniqueness => {:scope => :date_of_news}
+  
+  index({ date_of_news: 1 , seq_no: 1 }, { unique: true , name: "xm_idx_date_pageindex" })
+  
+  has_many :articles, class_name:"XinMinDailyArticlesModelForCollector", inverse_of: :pageIndex, autosave: true
+end
+
 # ------------------------------------------------------------------------------------
 
 
@@ -123,6 +152,70 @@ class XinminDailyCollector
   end
 =end
  
+  # in: page_guide_hash  -  json alike hash, e.g. {:}
+  def self.save_toc_hash_as_objmodels(page_guide_hash)
+    date_of_news = page_guide_hash['date_of_news']
+    pages_links = page_guide_hash['pages_links']
+    one_date = Date.strptime(date_of_news, fmt='%Y-%m-%d')
+
+    pages_links.each_with_index do |page, idx|
+      # get page index model
+      pgidx_db = XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).with_seq_no(idx).first
+      #                                                   ( :date_of_news.gte => one_date,
+      #                                                      :date_of_news.lt  => one_date + 1,
+      #                                                      :seq_no: idx ).first
+      # TODO: why the last 3 commented lines above fails to compile? 
+      
+      if pgidx_db
+        #puts "[INFO] Page Index ( date: #{date_of_news}, seq_no: #{idx}) has already been collected!"
+        pgidx = pgidx_db
+      else
+        #puts "[INFO] Making new Page Index ( date: #{date_of_news}, seq_no: #{idx})"
+        # build page index model
+        pgidx = XinMinDailyPageIndexModelForCollector.new(JSON.parse(page.to_json))
+        pgidx.date_of_news = one_date
+        pgidx.seq_no = idx
+        pgidx.articles ||= []
+        
+        pgidx.save!
+      end
+      
+      # build article models, 
+      # * please be noticed that the actual content of article is not retrieved here!
+      # * here it is assumed that articles will be cheeck for validateion
+      page['articles_links'].each do |article|
+        puts "Converting ... #{article['article_title']} : #{article['article_link']}"
+        article['date_of_news'] =  pgidx.date_of_news     # follow page index
+        
+        a = XinMinDailyArticlesModelForCollector.where(:article_link: article['article_link'], :pageIndex:pgidx.id).first
+        
+        if a 
+          puts "[INFO] Article Index ( date: #{date_of_news}, seq_no: #{idx}) has already been collected!"
+        else 
+          puts "[INFO] Making new Page Index ( date: #{date_of_news}, seq_no: #{idx})"
+          # a = XinMinDailyArticlesModelForCollector.new()
+          # since validation depends on fkey, here 'a.save!' is too ahead to work!
+          pgidx.articles.find_or_create_by(JSON.parse(article.to_json))
+          pgidx.reload.articles
+          puts pgidx.articles.size
+        end
+
+      end
+      
+      pgidx.save
+      
+  
+      #pp pgidx
+      #puts "--------- (page: #{idx}) ... collected!"
+    end # of each page
+    
+  end
+
+  # just retrieved
+  def self.download_contents_for_date(date)
+
+
+  end
 
 # Note: it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
   def self.download_news_for_date(date)
@@ -296,12 +389,39 @@ require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")
 =begin
  
  ---------------------  test of 'download_news_for_date' methods
-=end
-  
 
-  
+  puts "starting..."
   XinminDailyCollector.download_news_for_date(DateTime.new(2013,2,4))
   puts "download_news_for_date... DONE!"  
+=end  
+  
+=begin
+ ---------------------  test of 'save_toc_hash_as_objmodels' 
+=end
+  
+  tmp_file = './page_index_hash.yaml'
+  unless File.exists? tmp_file
+    toc = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
+    puts "toc retrieved...."
+  
+    File.open( tmp_file, 'w' ) do |out|
+      YAML.dump( toc , out )
+    end
+  end
+  
+  toc = File.open( tmp_file ) { |yf| YAML::load( yf ) }
+  # puts "toc: #{toc}"
+  
+  
+  XinminDailyCollector.save_toc_hash_as_objmodels(toc)   
+ 
+  
+  
+=begin
+---------------------  test of 'save_toc_hash_as_objmodels' 
+
+=end   
+
   
   
   

@@ -1,4 +1,4 @@
-#encoding: UTF-8
+#encoding:UTF-8
 # --------------------- grab the content on target
 
 # NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first
@@ -9,17 +9,17 @@ require 'nokogiri'
 require 'json'
 require 'mongoid'
 require 'yaml'
+
 # http://stackoverflow.com/questions/4980877/rails-error-couldnt-parse-yaml
 YAML::ENGINE.yamler = 'syck'
 
 
 require File.join(File.dirname(__FILE__),"./util.rb")
 
-# Q: any bettre place for configuration  A:
+# Q: any better place for configuration  A:
 MONGOID_CONFIG = File.join(File.dirname(__FILE__),"mongoid.yml") 
 Mongoid.load!(MONGOID_CONFIG, :development)
 Mongoid.logger = Logger.new($stdout)
-
 # ------------------------------------------------------------------------------------
 
 # Note: this class is to make the json structure more explicit!
@@ -49,20 +49,19 @@ class XinMinDailyPageIndexModelForCollector
   field :page_title, type: String
   field :page_link, type: String
   
-   # for use of 'checking downloaded or not', 'quick retrieving  of particular page', WATCH OUT: if missing a page, leave that empty rather than reusing it.
+  # for use of 'checking if downloaded or not', 'quick retrieving  of particular page', WATCH OUT: if missing a page, leave that empty rather than reusing it.
   field :seq_no, type:Integer
   field :date_of_news, type: Date
   
-  scope :on_specific_date, ->(date) { where(:date_of_news.gte => date, :date_of_news.lte => date+1) }
-  scope :with_seq_no, ->(seq) {where(seq_no: seq)}
+  scope :on_specific_date, lambda { |date| where(:date_of_news.gte => date, :date_of_news.lte => date+1)  if date }
+  scope :with_seq_no, lambda { |seq| where(seq_no: seq) if seq}
   
-  
-  validates :seq_no,  :uniqueness => {:scope => :date_of_news}
   index({ date_of_news:1}, { name: "xm_idx_date"} ) 
   index({ date_of_news: 1 , seq_no: 1 }, { unique: true , name: "xm_idx_date_pageindex" })
   
   has_many :articles, class_name:"XinMinDailyArticlesModelForCollector", inverse_of: :pageIndex, autosave: true
-
+  
+  validates :seq_no,  :uniqueness => {:scope => :date_of_news}
   validates :article_link,  :uniqueness => {:scope => :pageIndex}
 
 end
@@ -71,6 +70,7 @@ end
 
 
 # TODO: web related exception handling.
+
 class XinminDailyCollector
 
   def self.daily_news_links(date)
@@ -87,10 +87,10 @@ class XinminDailyCollector
   end
 
 
-  # invar:  date, a date on which the newspaper is available
-  # outvar: hash, a link-to-page_title mapping (Note: as directory of one day's pages are the same, link only include node_xxx.htm info)
+  # in var:  date, a date on which the newspaper is available
+  # out var: hash, a link-to-page_title mapping (Note: as directory of one day's pages are the same, link only include node_xxx.htm info)
   # e.g. http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm 
-  #   is a page-listing webpage which contains
+  #   is a page-listing web page which contains
   #   * links to the articles on that page of newspaper whose links looks like 
   #  http://xmwb.xinmin.cn/html/2012-10/28/content_1_2.htm
   #   * links to other pages
@@ -148,15 +148,15 @@ class XinminDailyCollector
     end
   end
 
-  def self.grab_news_for_date(datetiem)
+  def self.grab_news_for_date(dateitem)
   
   end
 =end
 
   def self.grab_news_content(news_url)
-	raw = WebPageTool.retrieve_content(news_url)
-    text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-	text
+  	raw = WebPageTool.retrieve_content(news_url)
+      text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+  	text
   end
  
   # in: page_guide_hash  -  json alike hash, e.g. {:}
@@ -218,8 +218,6 @@ class XinminDailyCollector
 
   # just retrieved
   def self.download_contents_for_date(date)
-
-
   end
 
   # Note: it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)

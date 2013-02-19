@@ -5,6 +5,7 @@ require 'mechanize'
 
 class WebPageTool
   def self.retrieve_content(url)
+    page = nil
     begin
       m = Mechanize.new { |agent| agent.user_agent_alias = 'Mac Safari' }
       page = m.get(url)

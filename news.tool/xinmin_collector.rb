@@ -10,11 +10,10 @@ require 'json'
 require 'mongoid'
 require 'yaml'
 
+require File.join(File.dirname(__FILE__),"web_page_tools.rb")
+
 # http://stackoverflow.com/questions/4980877/rails-error-couldnt-parse-yaml
 YAML::ENGINE.yamler = 'syck'
-
-
-require File.join(File.dirname(__FILE__),"./util.rb")
 
 # Q: any better place for configuration  A:
 MONGOID_CONFIG = File.join(File.dirname(__FILE__),"mongoid.yml") 
@@ -37,7 +36,6 @@ class XinMinDailyArticlesModelForCollector
   belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
   
   validates :article_link,  :uniqueness => {:scope => :date_of_news}
-
 end
 
 # NOTE: 2013.2.17. Considering that more tools are coming to re-process formerly collected data, we need a way to process all articles on particular days, 
@@ -62,18 +60,14 @@ class XinMinDailyPageIndexModelForCollector
   has_many :articles, class_name:"XinMinDailyArticlesModelForCollector", inverse_of: :pageIndex, autosave: true
   
   validates :seq_no,  :uniqueness => {:scope => :date_of_news}
-  validates :article_link,  :uniqueness => {:scope => :pageIndex}
 
 end
 
 # ------------------------------------------------------------------------------------
 
-
-# TODO: web related exception handling.
-
 class XinminDailyCollector
 
-  def self.daily_news_links(date)
+  def self.daily_news_toc_first_time(date)
     pages_and_articles = []
     pages = self.find_pages_links(date)
   
@@ -86,92 +80,40 @@ class XinminDailyCollector
     return { 'date_of_news' =>  date.strftime("%Y-%m-%d"), 'pages_links' => pages_and_articles }
   end
 
-
-  # in var:  date, a date on which the newspaper is available
-  # out var: hash, a link-to-page_title mapping (Note: as directory of one day's pages are the same, link only include node_xxx.htm info)
-  # e.g. http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm 
-  #   is a page-listing web page which contains
-  #   * links to the articles on that page of newspaper whose links looks like 
-  #  http://xmwb.xinmin.cn/html/2012-10/28/content_1_2.htm
-  #   * links to other pages
-  #  http://xmwb.xinmin.cn/html/2012-10/28/node_3.htm
-  def self.find_pages_links(date)
-    links_to_titles = []
-    pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.strftime('%m')}/#{date.strftime('%d')}"
+  def self.daily_news_toc_reload(yr,m,d)
+        # always try to find toc from file to cut time short.
+    tmp_file = File.join(File.dirname(__FILE__), "page_index_hash_#{yr}_#{m}_#{d}.yaml")
     
-    first_page = "#{pages_dir}/node_1.htm" # ends with node_1.html
-    page = WebPageTool.retrieve_content first_page #Nokogiri::HTML(open(first_page))
+    unless File.exists? tmp_file
+      toc = XinminDailyCollector.daily_news_toc_first_time(Date.new(yr,m,d))
+      puts "toc retrieved...."
     
-    
-    if page
-      page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
-        links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , 'page_title' => node.content.gsub("\r\n", "") }
+      File.open( tmp_file, 'w' ) do |out|
+        YAML.dump( toc , out )
       end
     end
 
-    #puts links_to_titles
-    return links_to_titles
-  end
-
-
-  # invar:  page, a one entry of link-to-page_title mapping
-  # outvar: hash, a link-to-page_title mapping
-  def self.find_articles_links(page_link)
-    links_articles_to_titles = []
-
-    page = WebPageTool.retrieve_content page_link
-
-    if page
-      page.parser.xpath("//div[@id='btdh']//a").each do |node|
-      # puts node['href'] ; puts node.content;
-      links_articles_to_titles << { 
-          'article_link' => "#{File.dirname(page_link)}/#{node['href']}" , 
-          'article_title' => node.content.gsub("\r\n", " ") }
-      end
+    toc = File.open( tmp_file ) { |yf| YAML::load( yf ) }
+    # puts "toc: #{toc}"
+    
+    # Basic check for newspaper is still unavailable
+    if toc['pages_links'] == []
+      puts "[NOTICE] news for #{toc['date_of_news']} is not available, try later!"
     end
-
-    return links_articles_to_titles
-  end
-
-
-=begin
-  # invar date is supposed to be like '2012-10-26'
-  def self.download_for_date(date=DateTime.now)
-
-    # check if date is before today's afternoon, newspaper is supposed to be published, otherwise not available
-    today = DateTime.now
-    avail_hour = 17
-    avail_time = DateTime.new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
-
-    if DateTime.parse(date) < avail_time
-      self.grab_news_for_date(avail_time)
-    end
-  end
-
-  def self.grab_news_for_date(dateitem)
-  
-  end
-=end
-
-  def self.grab_news_content(news_url)
-  	raw = WebPageTool.retrieve_content(news_url)
-      text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-  	text
+    
+    toc
   end
  
-  # in: page_guide_hash  -  json alike hash, e.g. {:}
-  def self.save_toc_hash_as_objmodels(page_guide_hash,force_reload_articles=false, get_content=false)
-    date_of_news = page_guide_hash['date_of_news']
-    pages_links = page_guide_hash['pages_links']
+  def self.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=false)
+    toc = self.daily_news_toc_reload(yr,m,d)
+    # TODO: check for validness of toc
+    date_of_news = toc['date_of_news']
+    pages_links = toc['pages_links']
     one_date = Date.strptime(date_of_news, fmt='%Y-%m-%d')
 
     pages_links.each_with_index do |page, idx|
       # get page index model
       pgidx_db = XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).with_seq_no(idx).first
-      #                                                   ( :date_of_news.gte => one_date,
-      #                                                      :date_of_news.lt  => one_date + 1,
-      #                                                      :seq_no: idx ).first
-      # TODO: why the last 3 commented lines above fails to compile? 
       
       if pgidx_db
         #puts "[INFO] Page Index ( date: #{date_of_news}, seq_no: #{idx}) has already been collected!"
@@ -213,31 +155,166 @@ class XinminDailyCollector
       #pp pgidx
       #puts "--------- (page: #{idx}) ... collected!"
     end # of each page
+  end
+
+
+  # Notes:
+  #  http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm is a one-page articles listing web page which contains:
+  #  links to the article pages whose url look like http://xmwb.xinmin.cn/html/2012-10/28/content_1_2.htm
+  def self.find_pages_links(date)
+    links_to_titles = []
+    pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.strftime('%m')}/#{date.strftime('%d')}"
     
+    first_page = "#{pages_dir}/node_1.htm"
+    page = WebPageTool.retrieve_content first_page
+    
+    if page
+      page.parser.xpath("//table[@id='bmdhTable']//a[@id='pageLink']").each do |node|
+        links_to_titles <<  {  :page_link => "#{pages_dir}/#{node['href']}"  , 'page_title' => node.content.gsub("\r\n", "") }
+      end
+    end
+
+    links_to_titles
   end
 
-  # just retrieved
-  def self.download_contents_for_date(date)
-  end
 
-  # Note: it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
-  def self.download_news_for_date(date)
-    # TODO: check if already downloaded or not. 
-    toc = XinminDailyCollector.daily_news_links(date)
+  def self.find_articles_links(page_link)
+    links_articles_to_titles = []
+
+    page = WebPageTool.retrieve_content page_link
+    if page
+      page.parser.xpath("//div[@id='btdh']//a").each do |node|
+      # puts node['href'] ; puts node.content;
+      links_articles_to_titles << { 
+          'article_link' => "#{File.dirname(page_link)}/#{node['href']}" , 
+          'article_title' => node.content.gsub("\r\n", " ") }
+      end
+    end
+
+    links_articles_to_titles
+  end
+  
+
+  def self.grab_news_content(article_link)
+    raw = WebPageTool.retrieve_content(article_link)
+    text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+    text
+  end
+  
+  
+  # Note: 
+  # * example code
+  # * it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
+  def self.util_news_listing_for_date(yr,m,d)
+    toc = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
+    #useful = links_dict['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
+    #useful.each do |page|
     toc['pages_links'].each do |page|
     puts "----------  #{page['page_title']}  ---------"
     
       page['articles_links'].each do |article|
-        puts "Retrieving #{article['article_title']} : #{article['article_link']}"
-        raw = WebPageTool.retrieve_content(article['article_link'])
-        article['text'] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-        article['date_of_news'] = Date.strptime(toc['date_of_news'], fmt='%Y-%m-%d')
+        #puts "Retrieving #{article['article_title']} : #{article['article_link']}"
+        puts "#{article['article_title']} : #{article['article_link']}"
+        
+        #raw = WebPageTool.retrieve_content(article['article_link'])
+        #article['text'] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+        #article['date_of_news'] = Date.strptime(toc['date_of_news'], fmt='%Y-%m-%d')
         #pp art ; puts "-------------------------------"
-        #a = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json) )
-        #a.save!
       end
     end
   end
+  
+  # -------------------------  for fun: collect address infos from one-day newspaper ------------------------- 
+  def play_addresses_in_articles(yr,m,d)  
+     require File.join(File.dirname(__FILE__),"./text_util.rb")
+      puts "starting.."
+    all_cnt = 0
+    poi_cnt = 0
+    page_cnt = 0
+    poi = []
+    articles_links = []
+    links_dict = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
+    # -- make array of hash with title link
+    links_dict['pages_links'].each do |page|
+        page_cnt +=1
+        break if page_cnt > 24
+        page['articles_links'].each do |article|
+            puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ; all_cnt+=1;
+            raw = WebPageTool.retrieve_content(article['article_link'])
+            article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+            
+            addrs = find_addr_in_article(article[:text])
+            
+            if addrs.size > 0
+                article[:addresses] = addrs
+                
+                poi << article; poi_cnt += 1
+            end
+            #puts page[:text]
+            #puts "----------------------"
+        end
+    end
+    
+    puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    puts " #{poi_cnt} of #{all_cnt} can  be potentially geo-tagged"
+    
+    File.open("news.txt", "w") do |f |
+      poi.each do | h |
+          f.puts h[:aritcle_title]
+          f.puts h['article_link']
+          f.puts h[:addresses]
+          f.puts "---------------------------"
+      end
+    end
+  end
+
+  # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
+  def play_guess_weibo_accounts_from_article_authors(yr,m,d)
+    require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
+      
+    links_dict = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
+    links_dict['pages_links'].each do |page|
+       
+       #puts page['page_title'].gsub(/\s/,"")
+       if  page['page_title'] =~ /夜光杯/ 
+           page['articles_links'].each do |article|
+               puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ;
+               raw = WebPageTool.retrieve_content(article['article_link'])
+               article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+               
+               tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
+               
+               if tokens.size > 0
+                   author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
+                   puts "Detecting weibo account for #{author}"
+                   begin 
+                     user = $client.user_show_by_screen_name(author).data
+                     puts "#{user['screen_name']}  #{user['id']} " 
+                   rescue 
+                     puts "#Couldn't find weibo info by screen_name #{author}"  
+                   end    
+                      
+                   sleep 2
+              end
+          end
+       end
+   end
+  end
+=begin
+  # invar date is supposed to be like '2012-10-26'
+  def self.util_download_for_date(date=DateTime.now)
+
+    # check if date is before today's afternoon, newspaper is supposed to be published, otherwise not available
+    today = DateTime.now
+    avail_hour = 17
+    avail_time = DateTime.new(today.year, today.hour, today.min, avail_hour) # Q: how to deal with users of different timezone?
+
+    if DateTime.parse(date) < avail_time
+      self.grab_news_for_date(avail_time)
+    end
+  end
+
+=end
 
 end
 
@@ -245,19 +322,11 @@ end
 
 if  __FILE__ == $0
   
-=begin
   # -------------------------    page and article grabbing    -------------------------
   #pages_links = XinminDailyCollector.find_pages_links(DateTime.new(2012,10,28))
-
-  #page1 = pages_links.keys[0]
-  #puts page1
-
-  #articles_links = XinminDailyCollector.find_articles_links page1
-  #puts articles_links
-
-  puts  XinminDailyCollector.daily_news_links(DateTime.new(2012,11,20))
-
-=end    
+  #page1 = pages_links.keys[0]   ; #puts page1
+  #articles_links = XinminDailyCollector.find_articles_links page1  ; #puts articles_links
+  #puts  XinminDailyCollector.daily_news_toc_reload(2012,11,20)    
 
 
 =begin
@@ -265,164 +334,28 @@ if  __FILE__ == $0
   #link = "http://blog.twitter.com/2012/11/search-for-new-perspective.html"
   #page = WebPageTool.retrieve_content link
   
-  
-  # -----
   #f = File.open("twitter_blog.html") ; page = Nokogiri::HTML(f) ; f.close
   
   #link = "http://xmwb.xinmin.cn/html/2012-11/20/content_10_1.htm" ; page = WebPageTool.retrieve_content link
   #puts guess_content_of_page page
 =end  
-  
-    
-=begin
-  # -------------------------  for fun: collect address infos from one-day newspaper ------------------------- 
-  
-   require File.join(File.dirname(__FILE__),"./text_util.rb")
-    puts "starting.."
-  all_cnt = 0
-  poi_cnt = 0
-  page_cnt = 0
-  poi = []
-  articles_links = []
-  links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
-  # -- make array of hash with title link
-  links_dict['pages_links'].each do |page|
-      page_cnt +=1
-      break if page_cnt > 24
-      page['articles_links'].each do |article|
-          puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ; all_cnt+=1;
-          raw = WebPageTool.retrieve_content(article['article_link'])
-          article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-          
-          addrs = find_addr_in_article(article[:text])
-          
-          if addrs.size > 0
-              article[:addresses] = addrs
-              
-              poi << article; poi_cnt += 1
-          end
-          #puts page[:text]
-          #puts "----------------------"
-      end
-  end
-
-
-  puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-  puts " #{poi_cnt} of #{all_cnt} can  be potentially geo-tagged"
-  
-  File.open("news.txt", "w") do |f |
-    poi.each do | h |
-        f.puts h[:aritcle_title]
-        f.puts h['article_link']
-        f.puts h[:addresses]
-        f.puts "---------------------------"
-    end
-  end
-=end
-
-
-
-
-=begin
-  # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
-
-    
-require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
-    
- links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2012,12,16))
- links_dict['pages_links'].each do |page|
-     
-     #puts page['page_title'].gsub(/\s/,"")
-     if  page['page_title'] =~ /夜光杯/ 
-         page['articles_links'].each do |article|
-             puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ;
-             raw = WebPageTool.retrieve_content(article['article_link'])
-             article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-             
-             tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
-             
-             if tokens.size > 0
-                 author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
-                 puts "Detecting weibo account for #{author}"
-                 begin 
-                   user = $client.user_show_by_screen_name(author).data
-                   puts "#{user['screen_name']}  #{user['id']} " 
-                 rescue 
-                   puts "#Couldn't find weibo info by screen_name #{author}"  
-                 end    
-                    
-                 sleep 2
-            end
-        end
-     end
- end
-=end
-
-=begin
-
- # -------  command based xinmin article reader, not true, just listing
- # TODO: navigation between pages,  select article by number
-
-    
-    links_dict = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
-    puts links_dict
-    puts "-------------------------------"
-    #useful = links_dict['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
-    #puts useful
-    #puts "-------------------------------"
-    #useful.each do |page|
-     links_dict['pages_links'].each do |page|
-         #puts page 
-        puts "----------  #{page['page_title']}  ---------"
-    
-        page['articles_links'].each do |art|
-            puts "#{art['article_title']} : #{art['article_link']}"
-            
-            #raw = WebPageTool.retrieve_content(art['article_link'])
-            #art[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-            #puts art[:text]
-            #puts "-------------------------------"
-        end
-    
-    end
-=end
-
-
 
 
 =begin
  ---------------------  test of 'download_news_for_date' methods
-
   puts "starting..."
-  XinminDailyCollector.download_news_for_date(DateTime.new(2013,2,4))
-  puts "download_news_for_date... DONE!"  
+  XinminDailyCollector.util_news_listing_for_date(2013,2,19)
+  puts "Listing... DONE!"  
 =end  
   
+  
 =begin
- ---------------------  test of 'save_toc_hash_as_objmodels'
-
-  tmp_file = './page_index_hash.yaml'
-  unless File.exists? tmp_file
-    toc = XinminDailyCollector.daily_news_links(DateTime.new(2013,2,4))
-    puts "toc retrieved...."
-  
-    File.open( tmp_file, 'w' ) do |out|
-      YAML.dump( toc , out )
-    end
-  end
-  
-  toc = File.open( tmp_file ) { |yf| YAML::load( yf ) }
-  # puts "toc: #{toc}"
-  
-  XinminDailyCollector.save_toc_hash_as_objmodels(toc, force_reload_articles=true, get_content=true )
- 
+ ---------------------  test of 'save_daily_news_to_db'
+  XinminDailyCollector.save_daily_news_to_db(2013,2,19,force_reload_articles=true, get_content=true )
 =end
 
  
-  
-  
 =begin
-
 ---------------------  test of 'retrieving specific pages and its articles' 
 
 puts "start..."

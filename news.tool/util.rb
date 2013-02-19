@@ -85,8 +85,8 @@ require 'sanitize'
 
 def choose_by_p_tag_under_div(doc)
   nodes = doc.xpath "//div[not(*[descendant::div]) ]"
-  
-  clean_divs = nodes.map{|e| e.remove_non_p_tags!  ;  e }  # e.remove_non_p_tags! ; puts "#{e} ------";
+  # e.remove_non_p_tags! ; puts "#{e} ------";
+  clean_divs = nodes.map{|e| e.remove_non_p_tags!  ;  e }
   .map(&:content)
   .sort{ |a,b| a.length <=> b.length}.reverse
   
@@ -102,8 +102,9 @@ def choose_by_sanitize_text_under_div(doc)
   nodes = doc.xpath "//div[not(*[descendant::div]) ]"
   
   puts nodes
+   # puts "#{e.class}..#{e.length}....." ;
   clean_divs = nodes.map(&:content)
-  .map{|e| Sanitize.clean(e) ; e.gsub!(/\s+/, "") ; e  }  # puts "#{e.class}..#{e.length}....." ;
+  .map{|e| Sanitize.clean(e) ; e.gsub!(/\s+/, "") ; e  } 
   .sort{ |a,b| a.length <=> b.length}.reverse
   
   if clean_divs.size > 0

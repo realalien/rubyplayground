@@ -205,7 +205,7 @@ class XinminDailyCollector
   # Note: 
   # * example code
   # * it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
-  def self.util_news_listing_for_date(yr,m,d)
+  def self.util_listing_news_for_date(yr,m,d)
     toc = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
     #useful = links_dict['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
     #useful.each do |page|
@@ -224,8 +224,56 @@ class XinminDailyCollector
     end
   end
   
+  def self.util_listing_news_of_toc(toc)
+    # pp toc
+    # pp "%%%%%%%%%%%%"    
+    toc['pages_links'].each do |page|
+    puts "----------  #{page['page_title']}  ---------"
+    
+      page['articles_links'].each do |article|
+        #puts "Retrieving #{article['article_title']} : #{article['article_link']}"
+        puts "#{article['article_title']} : #{article['article_link']}"
+        
+        #raw = WebPageTool.retrieve_content(article['article_link'])
+        #article['text'] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+        #article['date_of_news'] = Date.strptime(toc['date_of_news'], fmt='%Y-%m-%d')
+        #pp art ; puts "-------------------------------"
+      end
+    end
+  end
+  
+   # just retrieve partial pages those are of interest. 
+  # _listing_ means process on cli, not on data from database
+  # NOTE: texts in 'excluded' should use as less words as possible so not to kill too many pages!
+  def self.util_listing_pages_of_interest(toc, excluded=[], included_if_excl=[])
+    page_to_remove = []
+    if excluded.size > 0
+      toc['pages_links'].each do |page|
+        r = /#{excluded.join("|")}/ # assuming there are no special chars
+        if r === page['page_title']
+          if included_if_excl.size > 0
+            r_incl = /#{included_if_excl.join("|")}/
+            if r_incl === page['page_title']
+              # do not remove
+            else
+              
+              page_to_remove << page
+            end
+          else # included_if_excl 
+            page_to_remove << page
+          end
+        end
+      end
+      
+      toc['pages_links'] -= page_to_remove
+      return toc
+    else # no exclusion
+      return toc
+    end
+  end
+  
   # -------------------------  for fun: collect address infos from one-day newspaper ------------------------- 
-  def play_addresses_in_articles(yr,m,d)  
+  def self.play_addresses_in_articles(yr,m,d)  
      require File.join(File.dirname(__FILE__),"./text_util.rb")
       puts "starting.."
     all_cnt = 0
@@ -269,37 +317,39 @@ class XinminDailyCollector
   end
 
   # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
-  def play_guess_weibo_accounts_from_article_authors(yr,m,d)
+  def self.play_guess_weibo_accounts_from_article_authors(yr,m,d)
     require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
       
     links_dict = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
     links_dict['pages_links'].each do |page|
        
-       #puts page['page_title'].gsub(/\s/,"")
-       if  page['page_title'] =~ /夜光杯/ 
-           page['articles_links'].each do |article|
-               puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ;
-               raw = WebPageTool.retrieve_content(article['article_link'])
-               article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-               
-               tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
-               
-               if tokens.size > 0
-                   author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
-                   puts "Detecting weibo account for #{author}"
-                   begin 
-                     user = $client.user_show_by_screen_name(author).data
-                     puts "#{user['screen_name']}  #{user['id']} " 
-                   rescue 
-                     puts "#Couldn't find weibo info by screen_name #{author}"  
-                   end    
-                      
-                   sleep 2
-              end
+      #puts page['page_title'].gsub(/\s/,"")
+      if  page['page_title'] =~ /夜光杯/ 
+        page['articles_links'].each do |article|
+          puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ;
+          raw = WebPageTool.retrieve_content(article['article_link'])
+          article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+       
+          tokens =  article[:text].split("　").delete_if { |t | t.strip == "" }
+       
+         if tokens.size > 0
+           author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
+           puts "Detecting weibo account for #{author}"
+           begin 
+             user = $client.user_show_by_screen_name(author).data
+             puts "#{user['screen_name']}  #{user['id']} " 
+           rescue 
+             puts "#Couldn't find weibo info by screen_name #{author}"  
+           end    
+                
+           sleep 2
           end
-       end
-   end
+        end
+      end
+    end # of each do |page|
   end
+  
+  
 =begin
   # invar date is supposed to be like '2012-10-26'
   def self.util_download_for_date(date=DateTime.now)
@@ -344,7 +394,7 @@ if  __FILE__ == $0
 =begin
  ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_news_listing_for_date(2013,2,19)
+  XinminDailyCollector.util_listing_news_for_date(2013,2,19)
   puts "Listing... DONE!"  
 =end  
   
@@ -354,6 +404,17 @@ if  __FILE__ == $0
   XinminDailyCollector.save_daily_news_to_db(2013,2,19,force_reload_articles=true, get_content=true )
 =end
 
+
+=begin
+ 
+ ---------------------  test of 'util_listing_pages_of_interest'
+=end
+
+ XinminDailyCollector.util_listing_news_for_date(2013,2,19)
+ toc = XinminDailyCollector.daily_news_toc_reload(2013,2,19)
+ toc_of_interst = XinminDailyCollector.util_listing_pages_of_interest(toc,excluded=['第B','广告','夜光杯','文娱','体育','国际','人才','旅游','财经','连载','阅读'])
+ pp toc
+ XinminDailyCollector.util_listing_news_of_toc(toc_of_interst)
  
 =begin
 ---------------------  test of 'retrieving specific pages and its articles' 

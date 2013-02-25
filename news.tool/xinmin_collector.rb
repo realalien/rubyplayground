@@ -352,11 +352,11 @@ if  __FILE__ == $0
 
 
 =begin
- ---------------------  test of 'download_news_for_date' methods
+  # ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_listing_news_for_date(2013,2,19)
+  XinminDailyCollector.util_listing_news_for_date(2013,2,25)
   puts "Listing... DONE!"  
-=end  
+=end
   
   
 =begin

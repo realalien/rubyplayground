@@ -44,7 +44,7 @@ class Conference < Event
     
     if serious
       r_may_need_human_check = /#{$CONFERENCE_WORDS.join('|')}/m
-      result_for_check = text.scan(r_may_need_human_check).flatten.delete_if{|a|a.nil?}.map{|a|a.downcase}.uniq
+      result_for_check = text.scan(r_may_need_human_check).flatten.delete_if{|a|a.nil?}.map{|a|a.downcase}# no .uniq for counting
       if result.size != result_for_check.size
         puts "[WARNING] Conference alike words spotted, but not parsed out correctly, please check the text from link below"
         puts "#{entry.url}"
@@ -65,15 +65,18 @@ class Conference < Event
     $MAX_LENGTH_FOR_NAME = 30
     #r = /(the.*?conference)|\s(\w+Conf)|\s(\w+\-Con)/
     
-    phrase_template = "(([A-Z][\\w\]*\\s)+[[template]])"
+    phrase_template = "([A-Z][a-z]+(?=\s[A-Z])(?:\s[A-Z][a-z]+)+)(?=[[template]])"   #"(((:?\\b[A-Z][\\w]*\\s\\b)+)[[template]])"
     phrases = $CONFERENCE_WORDS.map{|a|phrase_template.clone.gsub("[[template]]", a) }
     str = phrases.join("|")
-    r = /#{str}|\A(\w+Conf)\B|\A(\w+\-Con)\B|#{str}/im # assuming there are no special chars
+    r = /#{str}|\A(\w+Conf)\B|\A(\w+\-Con)\B|#{str}/m # assuming there are no special chars
+    #puts r
+    
+    
     result = text.scan(r).flatten.delete_if{|a|a.nil?}.map{|a|a.downcase}.uniq
     
     if serious
-      single_word_check = /#{$CONFERENCE_WORDS.join('|')}/im
-      result_for_check = text.scan(single_word_check).flatten.delete_if{|a|a.nil?}.map{|a|a.downcase}.uniq
+      single_word_check = /#{$CONFERENCE_WORDS.join('|')}/m
+      result_for_check = text.scan(single_word_check).flatten.delete_if{|a|a.nil?}.map{|a|a.downcase}# no .uniq for counting
       if result.size != result_for_check.size
         puts "[WARNING] Conference alike words spotted, but not parsed out correctly, please check the text"
         puts "-------------------------------------------------------"
@@ -217,6 +220,7 @@ if __FILE__ == $0
   
   
   articles.each do | article|
+    puts ">>>   >>>   >>>   >>>   >>>"
     puts "For link : #{article['link']}" 
     confs = Conference.spot_from_text(article['content'])
     puts "Found: ....#{confs.join(',')}" if confs.size > 0

@@ -41,9 +41,12 @@ class XinminDailyCollector
   end
 
   def self.daily_news_toc_reload(yr,m,d)
-        # always try to find toc from file to cut time short.
-    tmp_file = File.join(File.dirname(__FILE__), "page_index_hash_#{yr}_#{m}_#{d}.yaml")
-    
+    if yr.is_a? String || m.is_a? String || d.is_a? String
+        yr,m,d = *[yr,m,d].map(&:to_i)
+    end
+    # always try to find toc from file to cut time short.
+    tmp_file = File.join(File.dirname(__FILE__), "page_index_hash_#{yr.to_i}_#{m.to_i}_#{d.to_i}.yaml")
+
     unless File.exists? tmp_file
       toc = XinminDailyCollector.daily_news_toc_first_time(Date.new(yr,m,d))
       puts "toc retrieved...."

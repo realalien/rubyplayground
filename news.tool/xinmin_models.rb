@@ -41,3 +41,22 @@ class XinMinDailyPageIndexModelForCollector
   validates :seq_no,  :uniqueness => {:scope => :date_of_news}
 
 end
+
+
+# ------------------------------------------------------------------------------
+
+# Notes:
+# * In order to re-engineer the news articles, various degrees of readers' activities will
+#   be involved. This class is only a model proof-of-concept, it is wishfully to be generalized 
+#   enough to write down info which are factors of interest, part of process without whole pic.
+#   can be reused for knowledge engineering.
+class Note
+  include Mongoid::Document
+  include Mongoid::Timestamps::Created
+  include Mongoid::Timestamps::Updated
+  
+  
+  
+  
+  
+end

@@ -12,6 +12,7 @@ require 'yaml'
 
 require File.join(File.dirname(__FILE__),"xinmin_models.rb")
 require File.join(File.dirname(__FILE__),"web_page_tools.rb")
+require File.join(File.dirname(__FILE__),"text_util.rb")
 
 # http://stackoverflow.com/questions/4980877/rails-error-couldnt-parse-yaml
 YAML::ENGINE.yamler = 'syck'
@@ -41,7 +42,7 @@ class XinminDailyCollector
   end
 
   def self.daily_news_toc_reload(yr,m,d)
-    if yr.is_a? String || m.is_a? String || d.is_a? String
+    if (yr.is_a? String) || (m.is_a? String) || (d.is_a? String)
         yr,m,d = *[yr,m,d].map(&:to_i)
     end
     # always try to find toc from file to cut time short.
@@ -254,7 +255,7 @@ class XinminDailyCollector
             raw = WebPageTool.retrieve_content(article['article_link'])
             article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
             
-            addrs = find_addr_in_article(article[:text])
+            addrs = find_chinese_addr_by_levels(article[:text])
             
             if addrs.size > 0
                 article[:addresses] = addrs
@@ -279,6 +280,50 @@ class XinminDailyCollector
     end
   end
 
+
+# -------------------------  for fun: collect address infos from one-day newspaper ------------------------- 
+  def self.play_addresses_in_articles_via_known_admin_area(yr,m,d)  
+     require File.join(File.dirname(__FILE__),"./text_util.rb")
+      puts "starting.."
+    all_cnt = 0
+    poi_cnt = 0
+    page_cnt = 0
+    poi = []
+    articles_links = []
+    links_dict = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
+    # -- make array of hash with title link
+    links_dict['pages_links'].each do |page|
+        page_cnt +=1
+        break if page_cnt > 24
+        page['articles_links'].each do |article|
+            puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ; all_cnt+=1;
+            raw = WebPageTool.retrieve_content(article['article_link'])
+            article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+            
+            addrs = find_chinese_addr_by_levels(article[:text])
+            
+            if addrs.size > 0
+                article[:addresses] = addrs
+                
+                poi << article; poi_cnt += 1
+            end
+            #puts page[:text]
+            #puts "----------------------"
+        end
+    end
+    
+    puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    puts " #{poi_cnt} of #{all_cnt} can  be potentially geo-tagged"
+    
+    File.open("news.txt", "w") do |f |
+      poi.each do | h |
+          f.puts h[:aritcle_title]
+          f.puts h['article_link']
+          f.puts h[:addresses]
+          f.puts "---------------------------"
+      end
+    end
+  end
   # -------- for fun: find weibo of those writers whose articles published in the pages named "夜光杯"
   def self.play_guess_weibo_accounts_from_article_authors(yr,m,d)
     require File.join(File.dirname(__FILE__),"./wb.bz/util.d/weibo_client.rb")   
@@ -357,7 +402,7 @@ if  __FILE__ == $0
 =begin
   # ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_listing_news_for_date(2013,2,25)
+  XinminDailyCollector.util_listing_news_for_date(2013,4,5)
   puts "Listing... DONE!"  
 =end
   
@@ -383,18 +428,48 @@ if  __FILE__ == $0
 
 =begin
 ---------------------  test of 'retrieving specific pages and its articles' 
+=end 
 
 puts "start..."
-ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,2,4)).with_seq_no(3)
 
+##XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true )
+
+ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,5)) #.with_seq_no(3)
+ 
+noise = ['第B','广告','夜光杯','文娱','体育','国际','人才','旅游','财经','连载','阅读']
+ 
 puts ps.length
-puts ps.first.articles.size
 
-ps.first.articles.each do | article |
-  pp article
+ps.each do |pgidx|
+  
+  if pgidx.page_title =~ /要闻|新闻/ and not pgidx.page_title  =~ /#{noise.join('|')}/
+    puts "-------------- #{pgidx.page_title} --------------"
+    pgidx.articles.each do | article|
+      puts "#{article.article_title}  #{article.article_link}"
+      r = find_chinese_addr_by_known_names(article.content)
+      if r && r.size > 0
+        puts "[INFO] found #{r.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]}}"  # .join(',')
+      else
+        puts "[INFO] no provincial name found."
+      end
+    end
+  end
+ 
 end
-=end   
+#puts ps.first.articles.size
+ 
+#ps.first.articles.each do | article |
+  # pp article
+#end
+  
 
+
+=begin
+---------------------  test of 'play_addresses_in_articles_via_known_admin_area' 
+
+=end
+  
+  
   
 end
 

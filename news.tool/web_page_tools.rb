@@ -33,6 +33,19 @@ class WebPageTool
   end
 end
 
+require 'open-uri'
+require 'httparty'
+
+class JsonTool
+  
+  # TODO: error handling
+  def self.jsonGet(url)
+    response = HTTParty.get(url) # 'http://api.t.sina.com.cn/provinces.json' 
+    #puts response.body, response.code, response.message, response.headers.inspect
+    a = JSON.parse(response.body)
+    a
+  end
+end
 
 
 

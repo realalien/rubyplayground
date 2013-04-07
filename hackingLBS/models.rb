@@ -429,12 +429,9 @@ class Member  < Explorable
         
         shops = reviewed_shops
         # reused by city_visits and area_visits
-        group_by_city_addrs = shops.collect{|shop| shop.address_dianping}  # array
-                                   .group_by {|element| element[0]}  # hashmap
+        group_by_city_addrs = shops.collect{|shop| shop.address_dianping}.group_by {|element| element[0]}  # hashmap
         
-        city_visits = group_by_city_addrs.map {|k,v| [k, v.length]} # hashmap
-                                   .sort_by {|k,v| v}  # hashmap
-                                   .reverse   # array
+        city_visits = group_by_city_addrs.map {|k,v| [k, v.length]}.sort_by {|k,v| v}.reverse   # array
         city_visits ||= []
         if city_visits.size > 0
             #puts "[DEBUG] city_visits sorted #{city_visits}"
@@ -448,9 +445,7 @@ class Member  < Explorable
             # TODO: how to handle address without district?!
             # TODO: is it necessary to be objected-oriented?
             group_by_district_addrs = addrs_in_most_visited_city.group_by {|element| element[1]} 
-            district_visits = group_by_district_addrs.map {|k,v| [k, v.length]} # hashmap
-                                            .sort_by {|k,v| v}  # hashmap
-                                            .reverse   # array
+            district_visits = group_by_district_addrs.map {|k,v| [k, v.length]}.sort_by {|k,v| v}.reverse   # array
             district_visits ||=[]
             if district_visits.size > 0
                 #puts "[DEBUG] district_visits sorted #{district_visits}"

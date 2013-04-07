@@ -1,5 +1,7 @@
 #encoding:UTF-8
 
+
+require 'json'
 # --------------------------------------------------------------
 # Simple way of processing target info, not using NLP processing
 # --------------------------------------------------------------
@@ -19,7 +21,7 @@ def find_addr_in_article( article)
     potential_address = []
     ss.each do |s|
         s.strip!
-        addr = find_chinese_addr(s)
+        addr = find_chinese_addr_by_levels(s)
 
         if addr && addr.size > 0
             addr[0].strip!
@@ -34,7 +36,7 @@ end
 
 # TODO: simple impl., assuming only one address appeared, can't handle two addresses yet.
 # TODO: may need NLP because text before the road name is mistakenly treated as part of the road name.
-def find_chinese_addr(str)
+def find_chinese_addr_by_levels(str)
     levels = ["省","市","岛",
               "区","县","湾","村",
               "路","街","巷","小区","弄","里",
@@ -77,9 +79,67 @@ def find_chinese_addr(str)
 
 end
 
+# ---------------
+
+def load_json_from_filecache(filename)
+  if File.exists? filename
+    JSON.parse( IO.read(filename) )
+  else 
+    nil
+  end
+  
+
+end
+
+def save_json_to_file_cache(filename,jsonData)
+  File.open("./#{filename}","w") do |f|
+    f.write(jsonData)
+  end
+end
+
+#module FactsFromInternet
+#end
+
+require File.join(File.dirname(__FILE__),"web_page_tools.rb")
+
+def china_admin_division_by_weibo_api_v2_provinces_json
+  filename = "#{__method__.to_s}.json"
+  saved = load_json_from_filecache(filename)
+  unless saved
+    saved = JsonTool.jsonGet('http://api.t.sina.com.cn/provinces.json')
+    save_json_to_file_cache(filename, saved.to_json)
+  end
+  saved
+end  
+
+
+
+def find_chinese_addr_by_known_names(str)
+  # first iteration to scan provincial name
+  known = china_admin_division_by_weibo_api_v2_provinces_json
+  
+  provinces = known["provinces"]
+  unwanted = ['其他', '海外']
+  prov_names = provinces.collect{ |c| c["name"] }
+  prov_names.delete_if{|c| unwanted.include?(c)}
+  
+  #puts prov_names
+  r = Regexp.new(prov_names.join("|"))
+  result = str.scan(r)
+  result
+end
+
+
+
+
 
 
 if __FILE__ == $0
+  
+  # -------
+  find_chinese_addr_by_known_names(nil)
+  
+  
   # base class test out
 =begin    
     content = WebPageTool.retrieve_content "http://xmwb.xinmin.cn/html/2012-11/20/content_8_5.htm" # "张江地区现异味气体"
@@ -102,7 +162,7 @@ if __FILE__ == $0
     
     
     #r = find_text(["社区","街道","路"], text)
-    r = find_chinese_addr(text)
+    r = find_chinese_addr_by_levels(text)
     puts r
     puts r.size
     

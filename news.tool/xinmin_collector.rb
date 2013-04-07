@@ -41,7 +41,7 @@ class XinminDailyCollector
   end
 
   def self.daily_news_toc_reload(yr,m,d)
-    if yr.is_a? String || m.is_a? String || d.is_a? String
+    if (yr.is_a? String) || (m.is_a? String) || (d.is_a? String)
         yr,m,d = *[yr,m,d].map(&:to_i)
     end
     # always try to find toc from file to cut time short.
@@ -355,11 +355,13 @@ if  __FILE__ == $0
 
 
 =begin
+  
+=end
   # ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_listing_news_for_date(2013,2,25)
+  XinminDailyCollector.util_listing_news_for_date(2013,4,2)
   puts "Listing... DONE!"  
-=end
+
   
   
 =begin

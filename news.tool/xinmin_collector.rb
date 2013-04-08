@@ -432,10 +432,20 @@ if  __FILE__ == $0
 
 puts "start..."
 
-##XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true )
-
+#XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true )
 ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,5)) #.with_seq_no(3)
- 
+#pp ps.all.includes(:articles).to_a
+
+#aa = ps.includes(:articles).first
+#aa.articles.each do |a|
+#  puts "title : #{a.article_title}, #{a.article_link}"
+#end
+
+pp ps.all.to_json(:include => :articles)
+
+
+
+=begin 
 noise = ['第B','广告','夜光杯','文娱','体育','国际','人才','旅游','财经','连载','阅读']
  
 puts ps.length
@@ -461,7 +471,8 @@ end
 #ps.first.articles.each do | article |
   # pp article
 #end
-  
+ 
+=end 
 
 
 =begin

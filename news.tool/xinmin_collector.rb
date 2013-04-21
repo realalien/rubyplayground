@@ -9,6 +9,7 @@ require 'nokogiri'
 require 'json'
 require 'mongoid'
 require 'yaml'
+require 'sanitize'
 
 require File.join(File.dirname(__FILE__),"xinmin_models.rb")
 require File.join(File.dirname(__FILE__),"web_page_tools.rb")
@@ -163,6 +164,23 @@ class XinminDailyCollector
     raw = WebPageTool.retrieve_content(article_link)
     text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
     text
+  end
+  
+  # collect the raw page for further text parsing instead of retrieving again from the Internet
+  def self.grab_raw_page(artiecle_link)
+    raw = WebPageTool.retrieve_content(article_link)
+    raw
+  end
+  
+  def self.find_the_author(article_link)
+    name = ""
+    raw = WebPageTool.retrieve_content article_link
+    if raw
+      raw.parser.xpath("//founder-author").each do |node|
+         name = Sanitize.clean(node.content)
+      end
+    end
+    name
   end
   
   
@@ -400,9 +418,10 @@ if  __FILE__ == $0
 
 
 =begin
+
   # ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_listing_news_for_date(2013,4,5)
+  XinminDailyCollector.util_listing_news_for_date(2013,4,20)
   puts "Listing... DONE!"  
 =end
   
@@ -430,10 +449,10 @@ if  __FILE__ == $0
 ---------------------  test of 'retrieving specific pages and its articles' 
 =end 
 
-puts "start..."
+#puts "start..."
 
 #XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true )
-ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,5)) #.with_seq_no(3)
+#ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,5)) #.with_seq_no(3)
 #pp ps.all.includes(:articles).to_a
 
 #aa = ps.includes(:articles).first
@@ -441,7 +460,7 @@ ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,
 #  puts "title : #{a.article_title}, #{a.article_link}"
 #end
 
-pp ps.all.to_json(:include => :articles)
+#pp ps.all.to_json(:include => :articles)
 
 
 
@@ -479,6 +498,12 @@ end
 ---------------------  test of 'play_addresses_in_articles_via_known_admin_area' 
 
 =end
+  
+=begin
+
+  # ---------------------  test of 'find_the_author' methods
+  XinminDailyCollector.find_the_author("http://xmwb.xinmin.cn/html/2013-04/20/content_4_4.htm")
+=end  
   
   
   

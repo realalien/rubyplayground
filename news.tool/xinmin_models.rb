@@ -1,5 +1,7 @@
 #encoding:UTF-8
 
+require 'mongoid'
+
 # Note: this class is to make the json structure more explicit!
 class XinMinDailyArticlesModelForCollector
   include Mongoid::Document
@@ -55,8 +57,19 @@ class Note
   include Mongoid::Timestamps::Created
   include Mongoid::Timestamps::Updated
   
-  
-  
-  
-  
 end
+
+
+# For newspaper hacking games, it seems meanless to relentlessly grab all the news for reprocessing.
+# the instance of this class is merely referring some articles of interest.
+def HackingTheme
+  include Mongoid::Document
+  include Mongoid::Timestamps::Created
+  include Mongoid::Timestamps::Updated 
+  
+  field :theme_name, type: String
+  validates :theme_name,  :uniqueness
+end
+
+
+

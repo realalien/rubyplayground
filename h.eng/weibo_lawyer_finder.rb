@@ -16,7 +16,15 @@ end
 # Q: lawyers probably is a general role for many fields, e.g. civil legal, biz legal, etc.
 #    try to distinguish/categorize them!
 # A :
- 
+
+
+# TODO: see the twitter clone project book for easier reimplemented
+# search local database for user info and 
+class LessWeiboAPICallService
+  
+end
+
+
 def collect_lawyers_from_weibo_user(screen_name)
   #  what to persist?  
   

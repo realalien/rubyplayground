@@ -56,6 +56,18 @@ end
 # IDEA: treat the existing users as discrete nodes, what the program should do is to map out the 
 
 
+# IDEA: a SNS profile listing page ( use cross-info to cut the search )
+#  a username
+# ---------------------
+#  @weibo  ..... ???  (could also be [...] )
+#       ----> reasoning:  description("...") meets the criterias(...)  # <-- manual add criteria here?
+#  @twitter .....   
+
+
+
+
+
+
 
 if __FILE__ == $0
   

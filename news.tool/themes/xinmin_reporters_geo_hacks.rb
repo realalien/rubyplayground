@@ -43,6 +43,7 @@ def one_article_parse_test
   candidates_ids.each do | e |
     puts e.uid
     puts $client.user(e.uid).inspect
+    puts "--------------------------"
   end
 
 end

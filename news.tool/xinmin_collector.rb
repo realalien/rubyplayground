@@ -108,7 +108,8 @@ class XinminDailyCollector
       
         if get_content
           puts "Retriving content ....(#{article['article_title']},#{article['article_link']})"
-          article['content']  = self.grab_news_content(article['article_link']) 
+          article['raw_content']  = self.grab_raw_page(article['article_link']) 
+          article['content']  = self.grab_news_content_from_raw(article['raw_content']) 
         end		 
  
         art = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json))
@@ -166,10 +167,15 @@ class XinminDailyCollector
     text
   end
   
+  def self.grab_news_content_from_raw(raw)
+    text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+    text
+  end
+  
   # collect the raw page for further text parsing instead of retrieving again from the Internet
-  def self.grab_raw_page(artiecle_link)
+  def self.grab_raw_page(article_link)
     raw = WebPageTool.retrieve_content(article_link)
-    raw
+    raw.content
   end
   
   def self.find_the_author(article_link)
@@ -428,7 +434,8 @@ if  __FILE__ == $0
   
 =begin
  ---------------------  test of 'save_daily_news_to_db'
-  XinminDailyCollector.save_daily_news_to_db(2013,2,19,force_reload_articles=true, get_content=true )
+
+  XinminDailyCollector.save_daily_news_to_db(2013,5,3,force_reload_articles=true, get_content=true )
 =end
 
 
@@ -444,6 +451,7 @@ if  __FILE__ == $0
  XinminDailyCollector.util_listing_news_of_toc(toc_of_interst)
 =end
 
+ XinminDailyCollector.util_listing_news_for_date(2013,5,3)
 
 =begin
 ---------------------  test of 'retrieving specific pages and its articles' 

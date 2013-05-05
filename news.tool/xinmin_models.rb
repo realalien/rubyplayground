@@ -11,6 +11,7 @@ class XinMinDailyArticlesModelForCollector
   
   field :article_title, type: String
   field :article_link, type: String
+  field :raw_content, type: String
   field :content, type: String
   field :date_of_news, type: Date
   

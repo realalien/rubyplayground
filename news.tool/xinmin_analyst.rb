@@ -64,7 +64,7 @@ module Research_Filtering
   
   # usually pointing to the article on other page,'>>>详见Axx版'
   def is_article_of_redirect_placeholder(content)
-    return content.match(/>>>详见([A-Z][0-9]+-*)+版/)   # />>>详见([A-Z][0-9]+-*)+版/
+    return content.match(/>>>详见[A-Z].*版/) 
   end
   
   def is_of_ads(title)
@@ -100,7 +100,7 @@ if __FILE__ == $0
 =end  
 
   # of one day
-  ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,3)) 
+  ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,6)) 
   # of point of interest
   pois = ps.select{|e| is_news_of_geo_importance(e.page_title) }
   puts pois.map(&:page_title).join("  ")
@@ -114,10 +114,15 @@ if __FILE__ == $0
       next if is_article_of_redirect_placeholder(article.content) || is_of_ads(article.article_title) # fitering
       all_articles += 1.0 # count total
       
-      r = find_chinese_addr_by_known_names(article.content)
+      r = scan_chinese_province_or_municipality(article.content, "上海")
       if r && r.size > 0
-        puts "[INFO] #{article.article_title} ---->  #{r.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]}}   #{article.article_link}"  # .join(',')
+        provinces_grouped = r.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]}
+        puts "[INFO] #{article.article_title} ---->  #{provinces_grouped}   #{article.article_link}"  # .join(',')
+        
         articles_has_geo_info += 1
+        provinces_grouped.each do | prov |
+            puts "scanning sub district ...#{scan_chinese_city_or_district_by_province(article.content, prov[0] )}"
+        end 
       else
         puts "[INFO] #{article.article_title} ---->  no provincial name found.   #{article.article_link}"
       end

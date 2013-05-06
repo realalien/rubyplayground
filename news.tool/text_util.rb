@@ -113,22 +113,62 @@ def china_admin_division_by_weibo_api_v2_provinces_json
 end  
 
 
-
-def find_chinese_addr_by_known_names(str)
-  # first iteration to scan provincial name
+def provinces_names_via_weibo_api_v2_provinces_json
+    # first iteration to scan provincial name
   known = china_admin_division_by_weibo_api_v2_provinces_json
   
   provinces = known["provinces"]
   unwanted = ['其他', '海外']
   prov_names = provinces.collect{ |c| c["name"] }
   prov_names.delete_if{|c| unwanted.include?(c)}
-  
+  prov_names
+end
+
+
+
+def scan_chinese_province_or_municipality(str, default_prov="")
+  prov_names = provinces_names_via_weibo_api_v2_provinces_json
   #puts prov_names
   r = Regexp.new(prov_names.join("|"))
   result = str.scan(r)
-  result
+  
+  if result && result.size > 0 
+    result
+  elsif default_prov && default_prov.length > 0  # allow the context of location awareness
+    return [default_prov]
+  else
+    nil  
+  end
+
 end
 
+
+
+def scan_chinese_city_or_district_by_province(str, province)
+  # clean out "市" ( if 'Municipality' 直辖市) for searching Weibo info 
+  province_cleaned = province.gsub('市', '')
+  
+  # get cities/districts by province
+  known = china_admin_division_by_weibo_api_v2_provinces_json
+   
+  provinces = known["provinces"]
+  
+  for prov in provinces do
+    if prov['name'] == province_cleaned
+      cities = prov['citys'].collect{|e|e.values}.flatten.map{|e| e.gsub('区','')}
+      r = Regexp.new(cities.join("|"))
+      #puts r
+      result = str.scan(r)
+      if result && result.size > 0
+        return [ province, result.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]} ]
+      else
+        break  # find the province, but no sub district found.
+      end
+    end  
+  end
+  
+  return [ province, [] ]   # emtpy city 
+end
 
 
 
@@ -137,7 +177,7 @@ end
 if __FILE__ == $0
   
   # -------
-  find_chinese_addr_by_known_names(nil)
+  #find_chinese_addr_by_known_names(nil)
   
   
   # base class test out

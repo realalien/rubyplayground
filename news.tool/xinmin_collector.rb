@@ -435,7 +435,7 @@ if  __FILE__ == $0
 =begin
  ---------------------  test of 'save_daily_news_to_db'
 
-  XinminDailyCollector.save_daily_news_to_db(2013,5,3,force_reload_articles=true, get_content=true )
+  XinminDailyCollector.save_daily_news_to_db(2013,5,6,force_reload_articles=true, get_content=true )
 =end
 
 
@@ -449,9 +449,10 @@ if  __FILE__ == $0
  toc_of_interst = XinminDailyCollector.util_listing_pages_of_interest(toc,excluded=['第B','广告','夜光杯','文娱','体育','国际','人才','旅游','财经','连载','阅读'])
  pp toc
  XinminDailyCollector.util_listing_news_of_toc(toc_of_interst)
-=end
+
 
  XinminDailyCollector.util_listing_news_for_date(2013,5,3)
+=end
 
 =begin
 ---------------------  test of 'retrieving specific pages and its articles' 

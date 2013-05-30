@@ -155,7 +155,13 @@ def scan_chinese_city_or_district_by_province(str, province)
   
   for prov in provinces do
     if prov['name'] == province_cleaned
-      cities = prov['citys'].collect{|e|e.values}.flatten.map{|e| e.gsub('区','')}
+      cities = prov['citys'].collect{|e|e.values}.flatten.map do |e| 
+        if e =~ /浦东新区/ 
+          e 
+        else 
+          e.gsub('区','')
+        end
+      end
       r = Regexp.new(cities.join("|"))
       #puts r
       result = str.scan(r)

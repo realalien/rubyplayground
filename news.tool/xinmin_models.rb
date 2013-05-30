@@ -15,9 +15,12 @@ class XinMinDailyArticlesModelForCollector
   field :content, type: String
   field :date_of_news, type: Date
   
+  validates :article_link,  :uniqueness => {:scope => :date_of_news}
+    
   belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
   
-  validates :article_link,  :uniqueness => {:scope => :date_of_news}
+  has_many :themes, class_name: "HackingTheme", inverse_of: :article4hacktheme, autosave: true, dependent: :restrict
+
 end
 
 # NOTE: 2013.2.17. Considering that more tools are coming to re-process formerly collected data, we need a way to process all articles on particular days, 
@@ -39,7 +42,7 @@ class XinMinDailyPageIndexModelForCollector
   index({ date_of_news:1}, { name: "xm_idx_date"} ) 
   index({ date_of_news: 1 , seq_no: 1 }, { unique: true , name: "xm_idx_date_pageindex" })
   
-  has_many :articles, class_name:"XinMinDailyArticlesModelForCollector", inverse_of: :pageIndex, autosave: true
+  has_many :articles, class_name:"XinMinDailyArticlesModelForCollector", inverse_of: :pageIndex, autosave: true,  dependent: :delete
   
   validates :seq_no,  :uniqueness => {:scope => :date_of_news}
 
@@ -60,17 +63,27 @@ class Note
   
 end
 
+# NOTE:  'it seems Note and HackTheme can be polymorphesized into one class', while for the purpose
+# of distinguishing the machine-code-based analysis with human manual ones, or even future versatile
+# evolving, these two classes are intentionally separated concepts!
+
 
 # For newspaper hacking games, it seems meanless to relentlessly grab all the news for reprocessing.
 # the instance of this class is merely referring some articles of interest.
-def HackingTheme
+class HackingTheme
   include Mongoid::Document
   include Mongoid::Timestamps::Created
   include Mongoid::Timestamps::Updated 
   
   field :theme_name, type: String
-  validates :theme_name,  :uniqueness
+  field :process_by, type: String  # probably a git commit
+    
+  belongs_to :article4hacktheme, class_name: "XinMinDailyArticlesModelForCollector", inverse_of: :themes
+
+  #  parse results are list as other attributes
 end
+
+
 
 
 

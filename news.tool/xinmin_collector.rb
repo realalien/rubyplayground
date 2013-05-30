@@ -69,6 +69,12 @@ class XinminDailyCollector
     toc
   end
  
+  # NOTE: both the page index and the articles on that page
+  def self.delete_daily_news_from_db(yr,m,d)
+    one_date = Date.new(yr,m,d)
+    XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).delete
+  end
+  
   def self.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=false)
     toc = self.daily_news_toc_reload(yr,m,d)
     # TODO: check for validness of toc
@@ -77,6 +83,7 @@ class XinminDailyCollector
     one_date = Date.strptime(date_of_news, fmt='%Y-%m-%d')
 
     pages_links.each_with_index do |page, idx|
+      puts "--------------- #{page['page_title']} ( idx: #{idx} )---------------"
       # get page index model
       pgidx_db = XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).with_seq_no(idx).first
       
@@ -107,7 +114,7 @@ class XinminDailyCollector
         article['date_of_news'] =  pgidx.date_of_news     # follow page index
       
         if get_content
-          puts "Retriving content ....(#{article['article_title']},#{article['article_link']})"
+
           article['raw_content']  = self.grab_raw_page(article['article_link']) 
           article['content']  = self.grab_news_content_from_raw(article['raw_content']) 
         end		 
@@ -115,12 +122,14 @@ class XinminDailyCollector
         art = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json))
         art.pageIndex = pgidx
         art.save
-        puts "Saving article done =============="
+        puts "Retriving content ... Done.  (#{article['article_title']},#{article['article_link']}) "
       end
 
       #pp pgidx
       #puts "--------- (page: #{idx}) ... collected!"
     end # of each page
+    puts "All Done!"
+    
   end
 
 
@@ -431,12 +440,12 @@ if  __FILE__ == $0
   puts "Listing... DONE!"  
 =end
   
-  
+
 =begin
  ---------------------  test of 'save_daily_news_to_db'
-
-  XinminDailyCollector.save_daily_news_to_db(2013,5,6,force_reload_articles=true, get_content=true )
 =end
+  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true )
+
 
 
 =begin

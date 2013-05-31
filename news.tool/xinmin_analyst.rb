@@ -1,7 +1,7 @@
 #encoding:UTF-8
 
 
-
+require 'uri'
 
 class XinMinDailyAnalyst
   
@@ -82,9 +82,7 @@ module Scrutinization
   
   def util_listing_china_city_mentioned(yr,m,d)
      # of one day
-    XinminDailyCollector.delete_daily_news_from_db(yr,m,d)
     ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)) 
-    
     puts ps.size 
     puts "--------"
     if ps.size <= 0
@@ -155,16 +153,39 @@ if __FILE__ == $0
 
 =begin
   # ----- filter out some pages, and then parse geo info for the rest -----
-  include Scrutinization
-  util_listing_china_city_mentioned(2013, 5, 30)
 =end
+  #include Scrutinization
+  #util_listing_china_city_mentioned(2013, 5, 30)
+
+  #XinminDailyCollector.delete_daily_news_from_db(2013, 5, 30)
 
 
 =begin
   # ----- test of hacking theme relation creation. 
+=end 
+  pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
+  eg_article = pages.first.articles.first
+  
+  # parse text for authors
+  pp XinminDailyCollector.find_the_authors(URI.unescape(eg_article.raw_content))
+
+
+def prep_authors_data
+  
+end
+
+
+
+  HackingTheme
+
+
+=begin
+  # # --- just scanning some articles without saving crawled text into local database.
+  
+   
 =end
-  one_page = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
-  pp eg_article = one_page.first.articles.first
+
+
 
 end
 

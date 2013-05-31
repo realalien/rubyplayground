@@ -31,6 +31,20 @@ class WebPageTool
     node = doc.at_xpath(xpath)
     node.content
   end
+  
+  
+  def self.looks_like_a_link(str)
+    begin
+      uri = URI.parse(str)
+      %w( http https ).include?(uri.scheme)
+    rescue URI::BadURIError
+      false
+    rescue URI::InvalidURIError
+      false
+    end
+  end
+  
+  
 end
 
 require 'open-uri'

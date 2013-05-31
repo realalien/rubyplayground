@@ -83,6 +83,21 @@ class HackingTheme
   #  parse results are list as other attributes
 end
 
+# hacking theme should more like a user-based activity class, DistilledData is thought to record parsed info.
+
+class DistilledData
+  include Mongoid::Document
+  include Mongoid::Timestamps::Created
+  include Mongoid::Timestamps::Updated 
+  
+  field :process_by, type: String  # probably a git commit
+    
+  belongs_to :article4hacktheme, class_name: "XinMinDailyArticlesModelForCollector", inverse_of: :themes
+
+  #  parse results are list as other attributes
+end
+
+
 
 
 

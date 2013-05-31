@@ -72,7 +72,7 @@ class XinminDailyCollector
   # NOTE: both the page index and the articles on that page
   def self.delete_daily_news_from_db(yr,m,d)
     one_date = Date.new(yr,m,d)
-    XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).delete
+    XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).destroy_all  # Q: why delete_all not deleting data of relation.
   end
   
   def self.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=false)
@@ -82,11 +82,18 @@ class XinminDailyCollector
     pages_links = toc['pages_links']
     one_date = Date.strptime(date_of_news, fmt='%Y-%m-%d')
 
+
+    # delete old
+    if force_reload_articles
+      puts "Deleting articles of date ... #{Date.new(yr,m,d).strftime('%Y-%m-%d')}"
+      self.delete_daily_news_from_db(yr,m,d)
+    end 
+     
     pages_links.each_with_index do |page, idx|
       puts "--------------- #{page['page_title']} ( idx: #{idx} )---------------"
       # get page index model
       pgidx_db = XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).with_seq_no(idx).first
-      
+       
       if pgidx_db
         #puts "[INFO] Page Index ( date: #{date_of_news}, seq_no: #{idx}) has already been collected!"
         pgidx = pgidx_db
@@ -101,10 +108,7 @@ class XinminDailyCollector
         pgidx.save!
       end
     
-      if force_reload_articles
-        puts "Deleting articles ... (page index: #{idx})"
-        pgidx.articles.delete_all
-      end  
+     
       
       # build article models, 
       # * please be noticed that the actual content of article is not retrieved here!
@@ -184,18 +188,27 @@ class XinminDailyCollector
   # collect the raw page for further text parsing instead of retrieving again from the Internet
   def self.grab_raw_page(article_link)
     raw = WebPageTool.retrieve_content(article_link)
-    raw.content
+    raw.content.force_encoding("UTF-8")
   end
   
-  def self.find_the_author(article_link)
-    name = ""
-    raw = WebPageTool.retrieve_content article_link
-    if raw
-      raw.parser.xpath("//founder-author").each do |node|
-         name = Sanitize.clean(node.content)
+  def self.find_the_authors(article_link_or_raw_content)
+    names = []
+    raw = ""
+    if WebPageTool.looks_like_a_link(article_link_or_raw_content)
+      raw = WebPageTool.retrieve_content article_link_or_raw_content
+      if raw
+        raw.parser.xpath("//founder-author").each do |node|
+           names << Sanitize.clean(node.content).split(/\s+/)
+        end
+      end
+    else
+      raw = Nokogiri::HTML(article_link_or_raw_content, encoding='UTF-8')
+      raw.xpath("//founder-author").each do |node|
+        names << Sanitize.clean(node.content).split(/\s+/)
       end
     end
-    name
+    
+    names.flatten
   end
   
   
@@ -443,9 +456,9 @@ if  __FILE__ == $0
 
 =begin
  ---------------------  test of 'save_daily_news_to_db'
-=end
-  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true )
 
+  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true )
+=end
 
 
 =begin

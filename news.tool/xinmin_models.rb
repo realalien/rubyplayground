@@ -19,7 +19,10 @@ class XinMinDailyArticlesModelForCollector
     
   belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
   
-  has_many :themes, class_name: "HackingTheme", inverse_of: :article4hacktheme, autosave: true, dependent: :restrict
+  has_many :themes, class_name: "HackingTheme", inverse_of: :article4hacktheme, autosave: true, dependent: :delete
+  
+  embeds_many :infos, class_name: "DistilledData", inverse_of: :article4distilleddata
+
 
 end
 
@@ -92,7 +95,7 @@ class DistilledData
   
   field :process_by, type: String  # probably a git commit
     
-  belongs_to :article4hacktheme, class_name: "XinMinDailyArticlesModelForCollector", inverse_of: :themes
+  embedded_in :article4distilleddata, class_name: "XinMinDailyArticlesModelForCollector", inverse_of: :infos
 
   #  parse results are list as other attributes
 end

@@ -390,7 +390,7 @@ class XinminDailyCollector
            author =  tokens[0].strip.gsub("　","").gsub("◆", "").gsub(" ", "").gsub(" ", "") 
            puts "Detecting weibo account for #{author}"
            begin 
-             user = $client.user_show_by_screen_name(author).data
+             user = $client.user_of_screen_name(author).data
              puts "#{user['screen_name']}  #{user['id']} " 
            rescue 
              puts "#Couldn't find weibo info by screen_name #{author}"  

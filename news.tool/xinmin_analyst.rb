@@ -159,24 +159,150 @@ if __FILE__ == $0
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 5, 30)
 
+  def add_info_reporters(article)
+    reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content))
+    if reporters.size > 0 and article.infos.map(&:reporters).size <= 0 #has parsed data and no existing
+      pp "adding reporters ...... article: #{article.article_title}  reporters: #{reporters}"
+      d = DistilledData.new
+      d[:reporters] = reporters
+      article.infos << d
+      article.save
+    end
+  end
 
 =begin
-  # ----- test of hacking theme relation creation. 
-=end 
+  # # find all parsed info in embedded document
   pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
   eg_article = pages.first.articles.first
+  pp eg_article.infos.map(&:reporters)
   
-  # parse text for authors
-  pp XinminDailyCollector.find_the_authors(URI.unescape(eg_article.raw_content))
+
+  # # test of adding parsed data
+  reporters = XinminDailyCollector.find_the_authors(URI.unescape(eg_article.raw_content))
+  d = DistilledData.new
+  d[:reporters] = reporters
+  eg_article.infos << d
+  eg_article.save 
+
+
+  # # test of query for existing data
+  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true  } ).size 
+  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } ).size
+
+
+  # # test of add parsed data 
+  no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
+  no_rpts.each do |article|
+      add_info_reporters(article)
+  end
+  
+
+
+  # # test of query all articles for reporters
+  all_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true } )
+  all_rpts.each do |article|
+    puts "#{article.article_title} ...... #{article.infos.map(&:reporters)}"
+  end
+ 
+  
+  
+  # # test of query for specific reporter
+  arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => ['陶邢莹', '连建明'] )
+  arts.each do |article|
+    puts "#{article.article_title} ...... #{article.infos.map(&:reporters).flatten}"
+  end     
+ 
+
+
+  
+  # # test of seeking authors in the pages of interest
+  news_titles = ['财经新闻']
+  pages = XinMinDailyPageIndexModelForCollector.any_in("page_title" => /#{news_titles.join('|')}/i )
+  pois = pages.map{|p|p.articles}.flatten
+  pois.each do |article|
+    puts "#{article.article_title}(#{article.article_link}) ...... #{article.infos.map(&:reporters).flatten}"
+  end 
+  
+  # IDEA: if we put two timelines(authors's twits and entity dev. seq.) together, what insights might be got?
+  
+  
+  # Q: is the news relayed or first-written?
+  # 结构性行情持续演绎(http://xmwb.xinmin.cn/html/2013-05/30/content_26_3.htm) ...... ["连建明"]
+  # 两公司被证监会调查(http://xmwb.xinmin.cn/html/2013-05/30/content_26_4.htm) ...... ["连建明"]
+  
+=end 
+
+  require File.join(File.dirname(__FILE__),"../wb.bz/util.d/weibo_client.rb")   
+  
+  # # Deviation, find colleagues of '陶邢莹' via Weibo engine, for what? org study? staff geo analysis?
+  # TODO: create a pool for studying group of people, use existing info to pin down the most likely account
+  
+  # bi-friends scan and with 'xinmin' in the description
+  #target_user = $client.user_of_screen_name('Peach爱吃桃子')  # '陶邢莹'
+  #friends = $client.bilateral_friends(target_user.id) # TODO: should save friends temp
+  
+  #fs = []
+  #friends.each do |f|
+  #  fs << f
+  #end
+  
+  #File.open( './tao_bifriends.yaml', 'w' ) do |out|
+  #  YAML.dump( fs , out )
+  #end
+        
+  local_read = File.open( './tao_bifriends.yaml' ) { |yf| YAML::load( yf ) }
+  #pp local_read
+  #pp $client.user(local_read.first.id)
+  
+  
+  pois = local_read # local_read.select{|e| e.verified_reason =~ /新民晚报/}
+  
+  if pois.size > 0
+     pois.each do |e|
+      pp "#{e.screen_name}(id: #{e.id}，org_role: #{e.verified_reason}) ... #{e.description} " if e != nil
+     end
+  else 
+     pp "no person of interest found!"
+  end
+ 
+  
+  # # test of apply parsing process on a group of data, ie. articles
+  
+  
+  
+  
+  
+  # # find a group of articles, by date, and then by month or by year, later by select range
+  # # by date
+  def articles_by_date(yr,m,d)
+    XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)).collect{|page|page.articles}.flatten
+  end
+  # # by date and pages
+  def articles_by_date_page(yr,m,d,page_nos)
+    pages = []
+    unless page_nos.is_a? Array
+      pages << page_nos
+    else 
+      pages = page_nos
+    end
+    
+    articles = []
+    pages.each do | page_no |
+      articles << XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)).with_seq_no(page_no).collect{|page|page.articles}.flatten
+    end
+    
+    articles.flatten
+  end
+
 
 
 def prep_authors_data
   
 end
 
-
-
-  HackingTheme
+  #pp articles_by_date_page(2013,5,30, 1).collect{|a|a.article_title}
+  #pp articles_by_date_page(2013,5,30, [0,1]).collect{|a|a.article_title}
+  
 
 
 =begin

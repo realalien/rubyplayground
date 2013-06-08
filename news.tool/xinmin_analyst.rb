@@ -154,10 +154,12 @@ if __FILE__ == $0
 =begin
   # ----- filter out some pages, and then parse geo info for the rest -----
 =end
-  #include Scrutinization
-  #util_listing_china_city_mentioned(2013, 5, 30)
 
-  #XinminDailyCollector.delete_daily_news_from_db(2013, 5, 30)
+  XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
+  include Scrutinization
+  util_listing_china_city_mentioned(2013, 6, 7)
+
+  
 
   def add_info_reporters(article)
     reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content))
@@ -230,8 +232,6 @@ if __FILE__ == $0
   # 结构性行情持续演绎(http://xmwb.xinmin.cn/html/2013-05/30/content_26_3.htm) ...... ["连建明"]
   # 两公司被证监会调查(http://xmwb.xinmin.cn/html/2013-05/30/content_26_4.htm) ...... ["连建明"]
   
-=end 
-
   require File.join(File.dirname(__FILE__),"../wb.bz/util.d/weibo_client.rb")   
   
   # # Deviation, find colleagues of '陶邢莹' via Weibo engine, for what? org study? staff geo analysis?
@@ -251,19 +251,17 @@ if __FILE__ == $0
   #end
         
   local_read = File.open( './tao_bifriends.yaml' ) { |yf| YAML::load( yf ) }
-  #pp local_read
-  #pp $client.user(local_read.first.id)
-  
   
   pois = local_read # local_read.select{|e| e.verified_reason =~ /新民晚报/}
-  
   if pois.size > 0
      pois.each do |e|
-      pp "#{e.screen_name}(id: #{e.id}，org_role: #{e.verified_reason}) ... #{e.description} " if e != nil
+      pp "#{e.screen_name}(loc: #{e.location}id: #{e.id}，org_role: #{e.verified_reason}) ... #{e.description} " if e != nil
      end
   else 
      pp "no person of interest found!"
   end
+
+=end 
  
   
   # # test of apply parsing process on a group of data, ie. articles

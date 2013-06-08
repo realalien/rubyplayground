@@ -29,7 +29,11 @@ class WebPageTool
 
     # TODO: supposed to find only one, refine and warning if more than one 
     node = doc.at_xpath(xpath)
-    node.content
+    if node
+      node.content
+    else
+      ""
+    end
   end
   
   

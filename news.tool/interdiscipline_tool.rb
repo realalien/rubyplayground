@@ -26,10 +26,7 @@ class Conference < Event
   $CONFERENCE_WORDS = ["conference","symposium","seminar","roundtable"].map{|a| [a, a.capitalize]}.flatten
   # find it  # SUG: try to refactor code to 'spot_from_text'
   # TODO:  only English now!
-  def self.spot_from_entry(entry, serious=true) #  , &blk block to allow to additional 
-    #content = WebPageTool.retrieve_content(link).content
-    
-
+  def self.spot_from_entry(entry, serious=true) #  , &blk block to allow to additional     
     $MAX_LENGTH_FOR_NAME = 30
     text = entry.content
     # r = /(the.{,30}?conference)|\s(\w+Conf)|\s(\w+\-Con)|(the.{,30}?symposium)|(the.{,30}?seminar)|(the.{,30}?roundtable)/im # assuming there are no special chars
@@ -58,9 +55,7 @@ class Conference < Event
     result
   end
   
-  def self.spot_from_text(text, serious=true) #  , &blk block to allow to additional 
-    #content = WebPageTool.retrieve_content(link).content
-    
+  def self.spot_from_text(text, serious=true) #  , &blk block to allow to additional  
     # TODO:  only English now!
     $MAX_LENGTH_FOR_NAME = 30
     #r = /(the.*?conference)|\s(\w+Conf)|\s(\w+\-Con)/
@@ -163,7 +158,10 @@ class Conference < Event
     all_article_links.each_with_index do | link, idx |
       puts "Crawling .... #{link} at index : #{idx}"
       break if idx >= num 
-      all_links_contents << {"link" => link, "content" => WebPageTool.retrieve_content(link).content }
+      # handle page retrieving
+      page = WebPageTool.retrieve_content(link)
+      txt = "" ; txt = page.content if page
+      all_links_contents << {"link" => link, "content" => txt }
     end
     pp all_links_contents
     all_links_contents

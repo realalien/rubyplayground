@@ -176,19 +176,28 @@ class XinminDailyCollector
 
   def self.grab_news_content(article_link)
     raw = WebPageTool.retrieve_content(article_link)
-    text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-    text
+    if raw
+      text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+      text
+    else 
+      ""
+    end  
   end
   
   def self.grab_news_content_from_raw(raw)
     text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-    text
+    text if text
+    ""
   end
   
   # collect the raw page for further text parsing instead of retrieving again from the Internet
   def self.grab_raw_page(article_link)
     raw = WebPageTool.retrieve_content(article_link)
-    raw.content.force_encoding("UTF-8")
+    if raw
+      raw.content.force_encoding("UTF-8")
+    else 
+      ""
+    end
   end
   
   def self.find_the_authors(article_link_or_raw_content)
@@ -299,7 +308,11 @@ class XinminDailyCollector
         page['articles_links'].each do |article|
             puts "[INFO] Processing #{article['article_title']} from #{article['article_link']}" ; all_cnt+=1;
             raw = WebPageTool.retrieve_content(article['article_link'])
-            article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+            if raw
+              article[:text] = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
+            else
+              article[:text] = ""
+            end
             
             addrs = find_chinese_addr_by_levels(article[:text])
             

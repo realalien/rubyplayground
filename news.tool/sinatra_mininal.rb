@@ -28,7 +28,7 @@ get '/xinmin/:date' do |date|
     # toc = XinminDailyCollector.daily_news_toc_reload(yr.to_i,m.to_i,d.to_i) # TODO: should retrieved from nosql
     # toc.to_json
     
-    XinminDailyCollector.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=true )
+    XinminDailyCollector.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=true, verbose=false )
     ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)) #.with_seq_no(3)
     ps.all.to_json(:include => :articles)
 end

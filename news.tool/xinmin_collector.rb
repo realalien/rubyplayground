@@ -1,5 +1,8 @@
 #encoding:UTF-8
 # --------------------- grab the content on target
+# TODO: if target resources server has limits on pages requests, should be able to handle
+# TODO: throught tests on 10 years of data efficiency of retrieving. and data storage!
+
 
 # NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first
 
@@ -50,9 +53,8 @@ class XinminDailyCollector
     tmp_file = File.join(File.dirname(__FILE__), "page_index_hash_#{yr.to_i}_#{m.to_i}_#{d.to_i}.yaml")
 
     unless File.exists? tmp_file
-      toc = XinminDailyCollector.daily_news_toc_first_time(Date.new(yr,m,d))
-      puts "toc retrieved...."
-    
+      toc = XinminDailyCollector.daily_news_toc_first_time(Date.new(yr,m,d))    # ;puts "toc retrieved...."
+
       File.open( tmp_file, 'w' ) do |out|
         YAML.dump( toc , out )
       end
@@ -75,7 +77,7 @@ class XinminDailyCollector
     XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).destroy_all  # Q: why delete_all not deleting data of relation.
   end
   
-  def self.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=false)
+  def self.save_daily_news_to_db(yr,m,d,force_reload_articles=false, get_content=false,verbose=false)
     toc = self.daily_news_toc_reload(yr,m,d)
     # TODO: check for validness of toc
     date_of_news = toc['date_of_news']
@@ -85,12 +87,12 @@ class XinminDailyCollector
 
     # delete old
     if force_reload_articles
-      puts "Deleting articles of date ... #{Date.new(yr,m,d).strftime('%Y-%m-%d')}"
+      puts "Deleting articles of date ... #{Date.new(yr,m,d).strftime('%Y-%m-%d')}"  if verbose
       self.delete_daily_news_from_db(yr,m,d)
     end 
      
     pages_links.each_with_index do |page, idx|
-      puts "--------------- #{page['page_title']} ( idx: #{idx} )---------------"
+      puts "--------------- #{page['page_title']} ( idx: #{idx} )---------------"  if verbose
       # get page index model
       pgidx_db = XinMinDailyPageIndexModelForCollector.on_specific_date(one_date).with_seq_no(idx).first
        
@@ -126,16 +128,38 @@ class XinminDailyCollector
         art = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json))
         art.pageIndex = pgidx
         art.save
-        puts "Retriving content ... Done.  (#{article['article_title']},#{article['article_link']}) "
+        puts "Retriving content ... Done.  (#{article['article_title']},#{article['article_link']}) " if verbose
       end
 
       #pp pgidx
       #puts "--------- (page: #{idx}) ... collected!"
     end # of each page
-    puts "All Done!"
+    puts "All Done!"  if verbose
     
   end
 
+  def self.save_news_to_db_by_range(start_date_str,end_date_str)
+    # sanity check
+    days = (Date.today - 1)..(Date.today - 1)  # TODO: need know the actual global time to see if today's is available!  
+    begin
+      days = Date.parse(start_date_str)..Date.parse(end_date_str)
+    rescue   
+      puts "[Error] Input dates may not be valid, please check again!"
+      return
+    end
+    
+    days.each do | d |
+      ps = XinMinDailyPageIndexModelForCollector.on_specific_date(d)
+      if ps.size <= 0
+        puts "[Info] Collecting articles for ...#{d.strftime('%Y-%m-%d')} ..."
+        yr,m,d = d.year, d.month, d.day
+        XinminDailyCollector.save_daily_news_to_db(yr,m,d,force_reload_articles=true, get_content=true, verbose=false )
+      else
+        puts "[Info] Data already collected(#{ps.count}) for #{d.strftime('%Y-%m-%d')}"
+      end
+    end
+    
+  end
 
   # Notes:
   #  http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm is a one-page articles listing web page which contains:
@@ -470,7 +494,7 @@ if  __FILE__ == $0
 =begin
  ---------------------  test of 'save_daily_news_to_db'
 
-  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true )
+  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true, verbose=true)
 =end
 
 
@@ -495,7 +519,7 @@ if  __FILE__ == $0
 
 #puts "start..."
 
-#XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true )
+#XinminDailyCollector.save_daily_news_to_db(2013,4,5,force_reload_articles=true, get_content=true, verbose=true )
 #ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,5)) #.with_seq_no(3)
 #pp ps.all.includes(:articles).to_a
 

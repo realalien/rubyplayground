@@ -86,7 +86,7 @@ module Scrutinization
     puts ps.size 
     puts "--------"
     if ps.size <= 0
-      XinminDailyCollector.save_daily_news_to_db(yr,m,d,force_reload_articles=true, get_content=true )
+      XinminDailyCollector.save_daily_news_to_db(yr,m,d,force_reload_articles=true, get_content=true, verbose=true)
       ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)) 
     end
     
@@ -155,10 +155,15 @@ if __FILE__ == $0
   # ----- filter out some pages, and then parse geo info for the rest -----
 =end
 
-  XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
-  include Scrutinization
-  util_listing_china_city_mentioned(2013, 6, 7)
+  #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
+  #include Scrutinization
+  #util_listing_china_city_mentioned(2013, 6, 7)
 
+  XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-5-31")
+  
+  
+  
+  
   
 
   def add_info_reporters(article)

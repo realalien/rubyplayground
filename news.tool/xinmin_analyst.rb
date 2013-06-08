@@ -162,7 +162,7 @@ if __FILE__ == $0
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
-  #XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-5-31")
+  #XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-6-9")
   #puts "All done!"
 
 =begin
@@ -181,8 +181,7 @@ if __FILE__ == $0
     
     pois = XinMinDailyArticlesModelForCollector.includes(:pageIndex)
                                               .where("article_title" => /#{kws.join('|')}/ )
-                                              .and("pageIndex.page_title" => /新闻/)
-                                              .asc("date_of_news") 
+                                              .asc("date_of_news")  # .and("pageIndex.page_title" => /新闻/)
     
     if pois.count > 0
       pois.each do | article |
@@ -193,7 +192,7 @@ if __FILE__ == $0
     end
   end
   
-  #util_articles_title_on_keyword('市长')  # ['A股','股市']  ['任命','当选']  '市长'  '死'
+  util_articles_title_on_keyword(['A股','股市'] )  # ['A股','股市']  ['任命','当选']  '市长'  '死'
 
 
     
@@ -207,9 +206,6 @@ if __FILE__ == $0
       article.save
     end
   end
-
-
-
 
 
 =begin

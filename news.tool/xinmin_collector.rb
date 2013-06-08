@@ -138,6 +138,8 @@ class XinminDailyCollector
     
   end
 
+
+  # TODO: how to benchmark the queries?
   def self.save_news_to_db_by_range(start_date_str,end_date_str)
     # sanity check
     days = (Date.today - 1)..(Date.today - 1)  # TODO: need know the actual global time to see if today's is available!  

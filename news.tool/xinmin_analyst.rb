@@ -159,23 +159,58 @@ if __FILE__ == $0
   #include Scrutinization
   #util_listing_china_city_mentioned(2013, 6, 7)
 
-  XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-5-31")
-  
-  
-  
-  
-  
 
+  # # --------------------  query-based (no search engine) data analysis playground ---------
+  # # parpare
+  #XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-5-31")
+  #puts "All done!"
+
+=begin
+  
+=end   
+  # # search for titles
+  
+  def util_articles_title_on_keyword(keywords)
+    # clean keywords with
+    kws = []
+    if keywords.is_a? String
+      kws << keywords.gsub('|','')
+    elsif keywords.is_a? Array
+      kws = keywords.map{ |e| e.gsub('|','')}
+    end
+    
+    pois = XinMinDailyArticlesModelForCollector.includes(:pageIndex)
+                                              .where("article_title" => /#{kws.join('|')}/ )
+                                              .and("pageIndex.page_title" => /新闻/)
+                                              .asc("date_of_news") 
+    
+    if pois.count > 0
+      pois.each do | article |
+        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t\t ( #{article.pageIndex.page_title} )"
+      end
+    else
+      pp "No data found!"
+    end
+  end
+  
+  #util_articles_title_on_keyword('市长')  # ['A股','股市']  ['任命','当选']  '市长'  '死'
+
+
+    
   def add_info_reporters(article)
     reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content))
     if reporters.size > 0 and article.infos.map(&:reporters).size <= 0 #has parsed data and no existing
-      pp "adding reporters ...... article: #{article.article_title}  reporters: #{reporters}"
+      # pp "adding reporters ...... article: #{article.article_title}  reporters: #{reporters}"
       d = DistilledData.new
       d[:reporters] = reporters
       article.infos << d
       article.save
     end
   end
+
+
+
+
 
 =begin
   # # find all parsed info in embedded document
@@ -199,10 +234,12 @@ if __FILE__ == $0
 
   # # test of add parsed data 
   no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
-  no_rpts.each do |article|
-      add_info_reporters(article)
+  pp "[Info] Started..."
+  no_rpts.each_with_index do |article, idx|
+    add_info_reporters(article)
+    idx += 1
+    pp "[Info] #{idx}/#{no_rpts.size} processed."
   end
-  
 
 
   # # test of query all articles for reporters

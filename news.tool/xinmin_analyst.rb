@@ -181,34 +181,68 @@ if __FILE__ == $0
     
     pois = XinMinDailyArticlesModelForCollector.includes(:pageIndex)
                                               .where("article_title" => /#{kws.join('|')}/ )
-                                              .asc("date_of_news")  # .and("pageIndex.page_title" => /新闻/)
+                                              .desc("date_of_news")  # .and("pageIndex.page_title" => /新闻/)
     
     if pois.count > 0
+      articles = []
       pois.each do | article |
-        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}"
+        #puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}"
+         articles << article
       end
+      articles
     else
-      pp "No data found!"
+      # pp "No data found!"
+      []
     end
   end
   
+  def is_same_day(day1, day2)
+    return ( day1.year == day2.year ) && ( day1.month == day2.month) && (day1.day == day2.day)
+  end
   
+  def tmp_symbol_before_or_after_date(to_cmp, any_date)
+    if any_date < to_cmp
+      return "ˆ" unless is_same_day(to_cmp, any_date)
+      return "="
+    elsif any_date > to_cmp
+      return "ˇ" unless is_same_day(to_cmp, any_date)
+      return "="
+    end
+  end
     
-  
-  
-  
+
   # util_articles_title_on_keyword('听证')  # ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
-
-  ws = PythonNLPService.new.get_jieba_seg("水价调整听证会拟六月底举行 ")["result"]
-  pp ws
-
-  #article = 
-  #util_related_article_from_title(article)
+  ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,10)).with_seq_no(0)
+  article = ps.first.articles[0]
+  #pp article
   
+  require File.join(File.dirname(__FILE__),"../py.nlp/nlp_py_svc.rb")
+  ws = PythonNLPService.new.get_jieba_seg(article.article_title)["result"]
+  kws = ws.select{|e| e.length > 1 && (e !~ /^[0-9]+$/) }.uniq
+  pp "[INFO] #{kws} "
   
+  related = {}
+  kws.each do | kw |
+    related[kw] = util_articles_title_on_keyword(kw)
+  end
+  pp "[INFO] Related articles collected! Going to find related news"
+  pp "For article #{article.article_title}(#{article.date_of_news.strftime('%Y-%m-%d')}, #{article.article_link})"
   
+  # print report
+  p "=" * article.article_title.length
+  related.each_pair do |k,v|
+    p "-"*10 +" "*5  +"#{k}" +" "*5 +"-"*10
+    if v.size > 0
+      v.each do |a|
+        p "#{tmp_symbol_before_or_after_date(article.date_of_news, a.date_of_news)}#{a.article_title}(#{a.date_of_news.strftime('%Y-%m-%d')}, #{a.article_link})" if a != article
+      end
+    else 
+      p "[Info]No related article found according to word #{k} in titles!"
+    end
+  end  
   
+  puts "Done!"
 
     
   def add_info_reporters(article)

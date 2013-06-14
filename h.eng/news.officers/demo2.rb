@@ -11,7 +11,7 @@ require 'mongoid'
 
 require File.join(File.dirname(__FILE__),"../../news.tool/xinmin_collector.rb")
 require File.join(File.dirname(__FILE__),"../../news.tool/util.rb")
-require File.join(File.dirname(__FILE__),"nlp_py_svc.rb")
+require File.join(File.dirname(__FILE__),"../nlp_py_svc.rb")
 
 
 DATABASE_NAME = "news_mining"

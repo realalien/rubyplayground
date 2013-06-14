@@ -157,12 +157,12 @@ if __FILE__ == $0
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
   #include Scrutinization
-  #util_listing_china_city_mentioned(2013, 6, 7)
+  #util_listing_china_city_mentioned(2013, 6, 9)
 
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
-  #XinminDailyCollector.save_news_to_db_by_range("2013-5-1","2013-6-9")
+  #XinminDailyCollector.save_news_to_db_by_range("2013-1-1","2013-4-30")
   #puts "All done!"
 
 =begin
@@ -185,15 +185,30 @@ if __FILE__ == $0
     
     if pois.count > 0
       pois.each do | article |
-        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t\t ( #{article.pageIndex.page_title} )"
+        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}"
       end
     else
       pp "No data found!"
     end
   end
   
-  util_articles_title_on_keyword(['A股','股市'] )  # ['A股','股市']  ['任命','当选']  '市长'  '死'
+  
+    
+  
+  
+  
+  # util_articles_title_on_keyword('听证')  # ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
+
+  ws = PythonNLPService.new.get_jieba_seg("水价调整听证会拟六月底举行 ")["result"]
+  pp ws
+
+  #article = 
+  #util_related_article_from_title(article)
+  
+  
+  
+  
 
     
   def add_info_reporters(article)

@@ -495,9 +495,9 @@ if  __FILE__ == $0
 
 =begin
  ---------------------  test of 'save_daily_news_to_db'
-
-  XinminDailyCollector.save_daily_news_to_db(2013,5,27,force_reload_articles=true, get_content=true, verbose=true)
 =end
+  # XinminDailyCollector.save_daily_news_to_db(2013,6,13,force_reload_articles=true, get_content=true, verbose=true)
+
 
 
 =begin

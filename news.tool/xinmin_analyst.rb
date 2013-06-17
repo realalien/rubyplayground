@@ -156,8 +156,8 @@ if __FILE__ == $0
 =end
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
-  #include Scrutinization
-  #util_listing_china_city_mentioned(2013, 6, 9)
+  include Scrutinization
+  util_listing_china_city_mentioned(2013, 6, 16)
 
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
@@ -213,37 +213,49 @@ if __FILE__ == $0
 
   # util_articles_title_on_keyword('听证')  # ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
-  ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,4,10)).with_seq_no(0)
-  article = ps.first.articles[0]
-  #pp article
+=begin
   
-  require File.join(File.dirname(__FILE__),"../py.nlp/nlp_py_svc.rb")
-  ws = PythonNLPService.new.get_jieba_seg(article.article_title)["result"]
-  kws = ws.select{|e| e.length > 1 && (e !~ /^[0-9]+$/) }.uniq
-  pp "[INFO] #{kws} "
-  
-  related = {}
-  kws.each do | kw |
-    related[kw] = util_articles_title_on_keyword(kw)
-  end
-  pp "[INFO] Related articles collected! Going to find related news"
-  pp "For article #{article.article_title}(#{article.date_of_news.strftime('%Y-%m-%d')}, #{article.article_link})"
-  
-  # print report
-  p "=" * article.article_title.length
-  related.each_pair do |k,v|
-    p "-"*10 +" "*5  +"#{k}" +" "*5 +"-"*10
-    if v.size > 0
-      v.each do |a|
-        p "#{tmp_symbol_before_or_after_date(article.date_of_news, a.date_of_news)}#{a.article_title}(#{a.date_of_news.strftime('%Y-%m-%d')}, #{a.article_link})" if a != article
-      end
-    else 
-      p "[Info]No related article found according to word #{k} in titles!"
-    end
-  end  
-  
-  puts "Done!"
+=end
+  def util_listing_related_for_article(yr,m,d, page_seq=0,article_seq=0) 
 
+    ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)).with_seq_no(page_seq)
+    
+    if ps.first == nil || (ps.first!=nil && article_seq >= ps.size)
+      puts "[Info] Article does not exist!"
+      return
+    end
+    
+    article = ps.first.articles[article_seq]
+    #pp article
+    
+    require File.join(File.dirname(__FILE__),"../py.nlp/nlp_py_svc.rb")
+    ws = PythonNLPService.new.get_jieba_seg(article.article_title)["result"]
+    kws = ws.select{|e| e.length > 1 && (e !~ /^[0-9]+$/) }.uniq
+    pp "[INFO] #{kws} "
+    
+    related = {}
+    kws.each do | kw |
+      related[kw] = util_articles_title_on_keyword(kw)
+    end
+    pp "[INFO] Related articles collected! Going to find related news"
+    pp "For article #{article.article_title}(#{article.date_of_news.strftime('%Y-%m-%d')}, #{article.article_link})"
+    
+    # print report
+    p "=" * article.article_title.length
+    related.each_pair do |k,v|
+      p "-"*10 +" "*5  +"#{k}" +" "*5 +"-"*10
+      if v.size > 0
+        v.each do |a|
+          p "#{tmp_symbol_before_or_after_date(article.date_of_news, a.date_of_news)}#{a.article_title}(#{a.date_of_news.strftime('%Y-%m-%d')}, #{a.article_link})" if a != article
+        end
+      else 
+        p "[Info]No related article found according to word #{k} in titles!"
+      end
+    end  
+    
+    puts "Done!"
+  end
+  
     
   def add_info_reporters(article)
     reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content))

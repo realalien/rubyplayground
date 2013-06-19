@@ -2,6 +2,7 @@
 
 
 require 'uri'
+require File.join(File.dirname(__FILE__),"xinmin_collector.rb")
 
 class XinMinDailyAnalyst
   
@@ -100,17 +101,18 @@ module Scrutinization
       all_articles = 0
       articles_has_geo_info = 0
       page.articles.each do |article|
-        next if is_article_of_redirect_placeholder(article.content) || is_of_ads(article.article_title) # fitering
+        cont = XinMinDailyCollector.grab_news_content_from_raw(article.raw_content)
+        next if is_article_of_redirect_placeholder(cont) || is_of_ads(article.article_title) # fitering
         all_articles += 1.0 # count total
         
-        r = scan_chinese_province_or_municipality(article.content, "上海")
+        r = scan_chinese_province_or_municipality(cont, "上海")
         if r && r.size > 0
           provinces_grouped = r.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]}
           puts "[INFO] #{article.article_title} ---->  #{provinces_grouped}   #{article.article_link}"  # .join(',')
           
           articles_has_geo_info += 1
           provinces_grouped.each do | prov |
-              puts "scanning sub district ...#{scan_chinese_city_or_district_by_province(article.content, prov[0] )}"
+              puts "scanning sub district ...#{scan_chinese_city_or_district_by_province(cont, prov[0] )}"
           end 
         else
           puts "[INFO] #{article.article_title} ---->  no provincial name found.   #{article.article_link}"
@@ -145,32 +147,9 @@ module Scrutinization
   
 end
 
-
-require File.join(File.dirname(__FILE__),"xinmin_collector.rb")
-
-if __FILE__ == $0
-
-
-=begin
-  # ----- filter out some pages, and then parse geo info for the rest -----
-=end
-
-  #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
-  include Scrutinization
-  util_listing_china_city_mentioned(2013, 6, 16)
-
-
-  # # --------------------  query-based (no search engine) data analysis playground ---------
-  # # parpare
-  #XinminDailyCollector.save_news_to_db_by_range("2013-1-1","2013-4-30")
-  #puts "All done!"
-
-=begin
+# # search for titles
   
-=end   
-  # # search for titles
-  
-  def util_articles_title_on_keyword(keywords)
+  def util_articles_title_on_keyword(keywords, verbose=false)
     # clean keywords with
     kws = []
     if keywords.is_a? String
@@ -186,12 +165,12 @@ if __FILE__ == $0
     if pois.count > 0
       articles = []
       pois.each do | article |
-        #puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}"
-         articles << article
+        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}" if verbose
+        articles << article
       end
       articles
     else
-      # pp "No data found!"
+      pp "No data found!" if verbose
       []
     end
   end
@@ -210,12 +189,6 @@ if __FILE__ == $0
     end
   end
     
-
-  # util_articles_title_on_keyword('听证')  # ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
-
-=begin
-  
-=end
   def util_listing_related_for_article(yr,m,d, page_seq=0,article_seq=0) 
 
     ps = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(yr,m,d)).with_seq_no(page_seq)
@@ -267,103 +240,8 @@ if __FILE__ == $0
       article.save
     end
   end
-
-
-=begin
-  # # find all parsed info in embedded document
-  pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
-  eg_article = pages.first.articles.first
-  pp eg_article.infos.map(&:reporters)
   
-
-  # # test of adding parsed data
-  reporters = XinminDailyCollector.find_the_authors(URI.unescape(eg_article.raw_content))
-  d = DistilledData.new
-  d[:reporters] = reporters
-  eg_article.infos << d
-  eg_article.save 
-
-
-  # # test of query for existing data
-  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true  } ).size 
-  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } ).size
-
-
-  # # test of add parsed data 
-  no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
-  pp "[Info] Started..."
-  no_rpts.each_with_index do |article, idx|
-    add_info_reporters(article)
-    idx += 1
-    pp "[Info] #{idx}/#{no_rpts.size} processed."
-  end
-
-
-  # # test of query all articles for reporters
-  all_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true } )
-  all_rpts.each do |article|
-    puts "#{article.article_title} ...... #{article.infos.map(&:reporters)}"
-  end
- 
-  
-  
-  # # test of query for specific reporter
-  arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => ['陶邢莹', '连建明'] )
-  arts.each do |article|
-    puts "#{article.article_title} ...... #{article.infos.map(&:reporters).flatten}"
-  end     
- 
-
-
-  
-  # # test of seeking authors in the pages of interest
-  news_titles = ['财经新闻']
-  pages = XinMinDailyPageIndexModelForCollector.any_in("page_title" => /#{news_titles.join('|')}/i )
-  pois = pages.map{|p|p.articles}.flatten
-  pois.each do |article|
-    puts "#{article.article_title}(#{article.article_link}) ...... #{article.infos.map(&:reporters).flatten}"
-  end 
-  
-  # IDEA: if we put two timelines(authors's twits and entity dev. seq.) together, what insights might be got?
-  
-  
-  # Q: is the news relayed or first-written?
-  # 结构性行情持续演绎(http://xmwb.xinmin.cn/html/2013-05/30/content_26_3.htm) ...... ["连建明"]
-  # 两公司被证监会调查(http://xmwb.xinmin.cn/html/2013-05/30/content_26_4.htm) ...... ["连建明"]
-  
-  require File.join(File.dirname(__FILE__),"../wb.bz/util.d/weibo_client.rb")   
-  
-  # # Deviation, find colleagues of '陶邢莹' via Weibo engine, for what? org study? staff geo analysis?
-  # TODO: create a pool for studying group of people, use existing info to pin down the most likely account
-  
-  # bi-friends scan and with 'xinmin' in the description
-  #target_user = $client.user_of_screen_name('Peach爱吃桃子')  # '陶邢莹'
-  #friends = $client.bilateral_friends(target_user.id) # TODO: should save friends temp
-  
-  #fs = []
-  #friends.each do |f|
-  #  fs << f
-  #end
-  
-  #File.open( './tao_bifriends.yaml', 'w' ) do |out|
-  #  YAML.dump( fs , out )
-  #end
-        
-  local_read = File.open( './tao_bifriends.yaml' ) { |yf| YAML::load( yf ) }
-  
-  pois = local_read # local_read.select{|e| e.verified_reason =~ /新民晚报/}
-  if pois.size > 0
-     pois.each do |e|
-      pp "#{e.screen_name}(loc: #{e.location}id: #{e.id}，org_role: #{e.verified_reason}) ... #{e.description} " if e != nil
-     end
-  else 
-     pp "no person of interest found!"
-  end
-
-=end 
- 
-  
-  # # test of apply parsing process on a group of data, ie. articles
+   # # test of apply parsing process on a group of data, ie. articles
   
   
   
@@ -393,20 +271,138 @@ if __FILE__ == $0
 
 
 
-def prep_authors_data
-  
-end
+  def prep_authors_data
+    
+  end
 
-  #pp articles_by_date_page(2013,5,30, 1).collect{|a|a.article_title}
-  #pp articles_by_date_page(2013,5,30, [0,1]).collect{|a|a.article_title}
-  
+
+
+if __FILE__ == $0
 
 
 =begin
-  # # --- just scanning some articles without saving crawled text into local database.
-  
-   
+  # ----- filter out some pages, and then parse geo info for the rest -----
 =end
+
+  #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
+  #include Scrutinization
+  #util_listing_china_city_mentioned(2013, 6, 16)
+
+
+  # # --------------------  query-based (no search engine) data analysis playground ---------
+  # # parpare
+  #XinminDailyCollector.save_news_to_db_by_range("2013-1-1","2013-4-30")
+  #puts "All done!"
+  
+  
+  
+=begin
+  # # --------------------  find all parsed info in embedded document
+  pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
+  eg_article = pages.first.articles.first
+  pp eg_article.infos.map(&:reporters)
+  
+
+  # # --------------------  test of adding parsed data
+  reporters = XinminDailyCollector.find_the_authors(URI.unescape(eg_article.raw_content))
+  d = DistilledData.new
+  d[:reporters] = reporters
+  eg_article.infos << d
+  eg_article.save 
+
+
+  # # -------------------- test of query for existing data
+  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true  } ).size 
+  pp XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } ).size
+
+
+  # # -------------------- test of add parsed data 
+  no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
+  pp "[Info] Started..."
+  no_rpts.each_with_index do |article, idx|
+    add_info_reporters(article)
+    idx += 1
+    pp "[Info] #{idx}/#{no_rpts.size} processed."
+  end
+
+
+  # # -------------------- test of query all articles for reporters
+  all_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => true } )
+  all_rpts.each do |article|
+    puts "#{article.article_title} ...... #{article.infos.map(&:reporters)}"
+  end
+ 
+  
+  
+  # # -------------------- test of query for specific reporter
+  arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => ['陶邢莹', '连建明'] )
+  arts.each do |article|
+    puts "#{article.article_title} ...... #{article.infos.map(&:reporters).flatten}"
+  end     
+ 
+
+
+  # ---------------- 
+  # util_articles_title_on_keyword('外贸',true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+
+
+
+  # # ----------------  just scanning some articles without saving crawled text into local database.
+
+   
+   
+  
+  # # --------------  test of seeking authors in the pages of interest
+  news_titles = ['财经新闻']
+  pages = XinMinDailyPageIndexModelForCollector.any_in("page_title" => /#{news_titles.join('|')}/i )
+  pois = pages.map{|p|p.articles}.flatten
+  pois.each do |article|
+    puts "#{article.article_title}(#{article.article_link}) ...... #{article.infos.map(&:reporters).flatten}"
+  end 
+  
+  # IDEA: if we put two timelines(authors's twits and entity dev. seq.) together, what insights might be got?
+  
+  
+  # # --------------- Q: is the news relayed or first-written?
+  # 结构性行情持续演绎(http://xmwb.xinmin.cn/html/2013-05/30/content_26_3.htm) ...... ["连建明"]
+  # 两公司被证监会调查(http://xmwb.xinmin.cn/html/2013-05/30/content_26_4.htm) ...... ["连建明"]
+  
+
+  
+  # -----------------------------------------------------------------------------------------------
+  # # Deviation, find colleagues of '陶邢莹' via Weibo engine, for what? org study? staff geo analysis?
+  # TODO: create a pool for studying group of people, use existing info to pin down the most likely account
+  
+  require File.join(File.dirname(__FILE__),"../wb.bz/util.d/weibo_client.rb")   
+  # bi-friends scan and with 'xinmin' in the description
+  #target_user = $client.user_of_screen_name('Peach爱吃桃子')  # '陶邢莹'
+  #friends = $client.bilateral_friends(target_user.id) # TODO: should save friends temp
+  
+  #fs = []
+  #friends.each do |f|
+  #  fs << f
+  #end
+  
+  #File.open( './tao_bifriends.yaml', 'w' ) do |out|
+  #  YAML.dump( fs , out )
+  #end
+        
+  local_read = File.open( './tao_bifriends.yaml' ) { |yf| YAML::load( yf ) }
+  
+  pois = local_read # local_read.select{|e| e.verified_reason =~ /新民晚报/}
+  if pois.size > 0
+     pois.each do |e|
+      pp "#{e.screen_name}(loc: #{e.location}id: #{e.id}，org_role: #{e.verified_reason}) ... #{e.description} " if e != nil
+     end
+  else 
+     pp "no person of interest found!"
+  end
+  # -----------------------------------------------------------------------------------------------
+  
+  
+
+=end 
+ 
 
 
 

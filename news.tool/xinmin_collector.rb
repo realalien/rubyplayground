@@ -122,7 +122,8 @@ class XinminDailyCollector
         if get_content
 
           article['raw_content']  = self.grab_raw_page(article['article_link']) 
-          article['content']  = self.grab_news_content_from_raw(article['raw_content']) 
+          #redundant of raw_content!
+          #article['content']  = self.grab_news_content_from_raw(article['raw_content']) 
         end		 
  
         art = XinMinDailyArticlesModelForCollector.new(JSON.parse(article.to_json))
@@ -545,7 +546,7 @@ ps.each do |pgidx|
     puts "-------------- #{pgidx.page_title} --------------"
     pgidx.articles.each do | article|
       puts "#{article.article_title}  #{article.article_link}"
-      r = find_chinese_addr_by_known_names(article.content)
+      r = find_chinese_addr_by_known_names(grab_news_content_from_raw(article.raw_content))
       if r && r.size > 0
         puts "[INFO] found #{r.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]}}"  # .join(',')
       else

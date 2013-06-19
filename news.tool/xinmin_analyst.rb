@@ -231,14 +231,17 @@ end
   
     
   def add_info_reporters(article)
-    reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content))
-    if reporters.size > 0 and article.infos.map(&:reporters).size <= 0 #has parsed data and no existing
+    puts article.date_of_news
+    puts article.raw_content
+    reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content.encode("UTF-8")))
+    # to avoid always checking for articles which have no author/reporters, "reporters.size > 0" is removed to allow empty set.
+    #if reporters.size > 0 && article.infos.map(&:reporters).size <= 0 #has parsed data   
       # pp "adding reporters ...... article: #{article.article_title}  reporters: #{reporters}"
       d = DistilledData.new
       d[:reporters] = reporters
       article.infos << d
       article.save
-    end
+    #end
   end
   
    # # test of apply parsing process on a group of data, ie. articles
@@ -284,16 +287,17 @@ if __FILE__ == $0
   # ----- filter out some pages, and then parse geo info for the rest -----
 =end
 
-  #XinminDailyCollector.delete_daily_news_from_db(2013, 6, 7)
+  #XinminDailyCollector.delete_daily_news_from_db(2012, 10, 1)
+  
   #include Scrutinization
   #util_listing_china_city_mentioned(2013, 6, 16)
 
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
-  #XinminDailyCollector.save_news_to_db_by_range("2013-1-1","2013-4-30")
-  #puts "All done!"
-  
+  # XinminDailyCollector.save_news_to_db_by_range("2012-10-1","2012-12-31")
+  # puts "All done!"
+  #
   
   
 =begin
@@ -343,7 +347,7 @@ if __FILE__ == $0
 
 
   # ---------------- 
-  # util_articles_title_on_keyword('外贸',true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+  util_articles_title_on_keyword('外贸',true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
 
 
@@ -404,7 +408,19 @@ if __FILE__ == $0
 =end 
  
 
+  #util_articles_title_on_keyword(['外贸', '贸易'],true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
+
+  # # -------------------- test of add parsed data 
+  no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
+  pp "[Info] Started..."
+  no_rpts.each_with_index do |article, idx|
+    add_info_reporters(article)
+    idx += 1
+    pp "[Info] #{idx}/#{no_rpts.size} processed." if ( idx % 100 == 0 && idx != 0 )
+  end
+  puts "Done!"
+  
 
 end
 

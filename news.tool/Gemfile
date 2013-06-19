@@ -11,3 +11,4 @@ gem 'mechanize'
 gem 'sanitize'
 
 gem 'feedzirra'
+gem 'httparty'

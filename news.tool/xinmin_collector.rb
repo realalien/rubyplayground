@@ -61,11 +61,13 @@ class XinminDailyCollector
     end
 
     toc = File.open( tmp_file ) { |yf| YAML::load( yf ) }
+
     # puts "toc: #{toc}"
     
     # Basic check for newspaper is still unavailable
     if toc['pages_links'] == []
       puts "[NOTICE] news for #{toc['date_of_news']} is not available, try later!"
+      File.delete(a[i]) # clean out the yaml for later redo
     end
     
     toc

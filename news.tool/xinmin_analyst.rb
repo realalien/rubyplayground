@@ -231,8 +231,8 @@ end
   
     
   def add_info_reporters(article)
-    puts article.date_of_news
-    puts article.raw_content
+    #puts article.date_of_news
+    #puts article.raw_content
     reporters = XinminDailyCollector.find_the_authors(URI.unescape(article.raw_content.encode("UTF-8")))
     # to avoid always checking for articles which have no author/reporters, "reporters.size > 0" is removed to allow empty set.
     #if reporters.size > 0 && article.infos.map(&:reporters).size <= 0 #has parsed data   
@@ -279,6 +279,18 @@ end
   end
 
 
+  def find_articles_whose_authors_in(names)
+    rephased = []
+    if names.is_a? String
+      rephased << names
+    elsif names.is_a? Array
+      rephased = names
+    end
+    arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => rephased ).desc("date_of_news")
+    arts.each do |article|
+      puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip}\t\t(#{article.date_of_news.strftime('%Y-%m-%d')}) #{article.article_link}"
+    end 
+  end
 
 if __FILE__ == $0
 
@@ -295,8 +307,8 @@ if __FILE__ == $0
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
-  # XinminDailyCollector.save_news_to_db_by_range("2012-10-1","2012-12-31")
-  # puts "All done!"
+  #XinminDailyCollector.save_news_to_db_by_range("2013-6-1","2013-7-2")
+  #puts "All done!"
   #
   
   
@@ -408,19 +420,29 @@ if __FILE__ == $0
 =end 
  
 
-  #util_articles_title_on_keyword(['外贸', '贸易'],true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+   # util_articles_title_on_keyword('出口',true)  #  ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+  
+  # ["杨丽琼"] 今年外贸进出口将略好于去年      ( 2013-04-10 第A02版：要闻 ) http://xmwb.xinmin.cn/html/2013-04/10/content_2_2.htm
+    # # -------------------- test of query for specific reporter
+    
+  
+   
+  #find_articles_whose_authors_in(["杨丽琼"])
 
+  
+  
+  XinminDailyCollector.util_listing_news_for_date(2013, 7, 2)
 
   # # -------------------- test of add parsed data 
-  no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
-  pp "[Info] Started..."
-  no_rpts.each_with_index do |article, idx|
-    add_info_reporters(article)
-    idx += 1
-    pp "[Info] #{idx}/#{no_rpts.size} processed." if ( idx % 100 == 0 && idx != 0 )
-  end
-  puts "Done!"
   
+  
+  # ------------------------------------------
+  # Data process notes
+  # * one article of 2012.11.6 news has encoding problem, author can't be processed. 2013.6.20
+  # * 
+  
+
+
 
 end
 

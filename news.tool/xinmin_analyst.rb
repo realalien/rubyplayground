@@ -427,11 +427,11 @@ if __FILE__ == $0
     
   
    
-  #find_articles_whose_authors_in(["杨丽琼"])
+  #find_articles_whose_authors_in(["胡晓晶"])
 
   
-  
-  XinminDailyCollector.util_listing_news_for_date(2013, 7, 2)
+  #XinminDailyCollector.save_daily_news_to_db(2013, 7, 3,force_reload_articles=false, get_content=true,verbose=true)
+  #XinminDailyCollector.util_listing_news_for_date(2013, 7, 2)
 
   # # -------------------- test of add parsed data 
   

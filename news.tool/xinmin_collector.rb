@@ -67,7 +67,7 @@ class XinminDailyCollector
     # Basic check for newspaper is still unavailable
     if toc['pages_links'] == []
       puts "[NOTICE] news for #{toc['date_of_news']} is not available, try later!"
-      File.delete(a[i]) # clean out the yaml for later redo
+      File.delete(tmp_file) # clean out the yaml for later redo
     end
     
     toc
@@ -215,8 +215,11 @@ class XinminDailyCollector
   
   def self.grab_news_content_from_raw(raw)
     text = WebPageTool.locate_text_by_xpath("//div[@id='ozoom']", raw)
-    text if text
-    ""
+    if text
+      text
+    else
+      ""
+    end
   end
   
   # collect the raw page for further text parsing instead of retrieving again from the Internet

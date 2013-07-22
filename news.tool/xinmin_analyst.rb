@@ -165,8 +165,8 @@ end
     if pois.count > 0
       articles = []
       pois.each do | article |
-        puts "#{article.infos.map(&:reporters).flatten} #{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}" if verbose
-        articles << article
+        puts "#{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}" if verbose
+        articles << article  # #{article.infos.map(&:reporters).flatten} 
       end
       articles
     else
@@ -287,17 +287,21 @@ if __FILE__ == $0
   # ----- filter out some pages, and then parse geo info for the rest -----
 =end
 
-  #XinminDailyCollector.delete_daily_news_from_db(2012, 10, 1)
+  #XinminDailyCollector.delete_daily_news_from_db(2012, 9, 1)
   
   #include Scrutinization
-  #util_listing_china_city_mentioned(2013, 6, 16)
+  #util_listing_china_city_mentioned(2013, 7, 12)
 
+  XinminDailyCollector.save_daily_news_to_db(2013,7,17,force_reload_articles=true, get_content=true, verbose=true)
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
-  # XinminDailyCollector.save_news_to_db_by_range("2012-10-1","2012-12-31")
-  # puts "All done!"
+  #XinminDailyCollector.save_news_to_db_by_range("2012-6-1","2012-7-31")
+  #puts "All done!"
   #
+  
+  
+  #XinminDailyCollector.util_listing_news_for_date(2013, 7, 12)
   
   
 =begin
@@ -347,7 +351,7 @@ if __FILE__ == $0
 
 
   # ---------------- 
-  util_articles_title_on_keyword('外贸',true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+  util_articles_title_on_keyword('',true)  #  '体育彩票', '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
 
 
@@ -408,9 +412,17 @@ if __FILE__ == $0
 =end 
  
 
-  #util_articles_title_on_keyword(['外贸', '贸易'],true)  #  '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+ #util_articles_title_on_keyword('',true) # '程序'，'编程', '游戏','代码'， '编程','卫生' '彩票', '摩根' ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
-
+=begin
+    # # -------------------- test of query for specific reporter
+  arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => ['诺诺'] )
+  arts.each do |article|
+    puts "#{article.article_title} ...... #{article.infos.map(&:reporters).flatten}"
+  end     
+=end 
+ 
+=begin
   # # -------------------- test of add parsed data 
   no_rpts = XinMinDailyArticlesModelForCollector.where( "infos.reporters" => { "$exists" => false } )
   pp "[Info] Started..."
@@ -420,7 +432,10 @@ if __FILE__ == $0
     pp "[Info] #{idx}/#{no_rpts.size} processed." if ( idx % 100 == 0 && idx != 0 )
   end
   puts "Done!"
-  
+=end 
+
+
+
 
 end
 

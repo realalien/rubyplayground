@@ -107,7 +107,7 @@ def china_admin_division_by_weibo_api_v2_provinces_json
   saved = load_json_from_filecache(filename)
   unless saved
     saved = JsonTool.jsonGet('http://api.t.sina.com.cn/provinces.json')
-    save_json_to_file_cache(filename, saved.to_json)
+    save_json_to_file_cache(filename, saved.to_json.force_encoding("UTF-8"))
   end
   saved
 end  
@@ -130,6 +130,7 @@ def scan_chinese_province_or_municipality(str, default_prov="")
   prov_names = provinces_names_via_weibo_api_v2_provinces_json
   #puts prov_names
   r = Regexp.new(prov_names.join("|"))
+
   result = str.scan(r)
   
   if result && result.size > 0 
@@ -163,7 +164,6 @@ def scan_chinese_city_or_district_by_province(str, province)
         end
       end
       r = Regexp.new(cities.join("|"))
-      #puts r
       result = str.scan(r)
       if result && result.size > 0
         return [ province, result.flatten.group_by{|c|c}.map{|k,v| [k, v.length]}.sort{|c|c[1]} ]

@@ -1,0 +1,1 @@
+IDEA: considering that there isn't much information from Xinmin Daily from which I try to extract from, it would be nice to 'provide mechanism to allow me to create connections between nodes of information, thus program can utilize the connections to do the extract, analyse constantly

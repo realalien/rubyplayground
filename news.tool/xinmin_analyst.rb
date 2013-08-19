@@ -365,7 +365,7 @@ if __FILE__ == $0
   
 
   
-  #pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,7, 17)).with_seq_no(14)
+  #pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,8, 14)) #.with_seq_no(14)
   #eg_article = pages.first.articles[3]
   #puts eg_article.article_title
   
@@ -377,22 +377,22 @@ if __FILE__ == $0
   #puts r
   
 
-  util_listing_china_city_mentioned(2013, 7, 15)
+  #util_listing_china_city_mentioned(2013, 7, 15)
 
-  XinminDailyCollector.save_daily_news_to_db(2013,7,17,force_reload_articles=true, get_content=true, verbose=true)
+  #XinminDailyCollector.save_daily_news_to_db(2013,8,12,force_reload_articles=true, get_content=true, verbose=true)
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 15)
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 16)
-  #XinminDailyCollector.save_daily_news_to_db(2013, 7, 15,force_reload_articles=true, get_content=true,verbose=true)
+  XinminDailyCollector.save_daily_news_to_db(2013, 8, 19 ,force_reload_articles=true, get_content=true,verbose=true)
   #XinminDailyCollector.save_news_to_db_by_range("2013-7-15","2013-7-16")
   #puts "All done!"
   #
   
   
-  #XinminDailyCollector.util_listing_news_for_date(2013, 7, 12)
+  #XinminDailyCollector.util_listing_news_for_date(2013, 8, 14)
 
   
 =begin
@@ -501,9 +501,26 @@ if __FILE__ == $0
   
 
 =end 
- 
- #util_articles_title_on_keyword('',true) # '程序'，'编程', '游戏','代码'， '编程','卫生' '彩票', '摩根' ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
+=begin
+ util_articles_title_on_keyword(['小区', '社区'],true) # '程序'，'编程', '游戏','代码'， '编程','卫生' '彩票', '摩根' ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+
+  
+  /Users/dhs/.rvm/gems/ruby-1.9.3-p374@news.tool/gems/moped-1.5.0/lib/moped/node.rb:382:in `block in query': The operation: #<Moped::Protocol::Query (Moped::Errors::QueryFailure)
+  @length=165
+  @request_id=4
+  @response_to=0
+  @op_code=2004
+  @flags=[:slave_ok]
+  @full_collection_name="news_mining.xin_min_daily_articles_model_for_collectors"
+  @skip=0
+  @limit=0
+  @selector={"$query"=>{"article_title"=>/小区|社区/}, "$orderby"=>{"date_of_news"=>-1}}
+  @fields=nil>
+failed with error 10128: "too much data for sort() with no index.  add an index or specify a smaller limit"
+=end  
+  
+  
   
   # ["杨丽琼"] 今年外贸进出口将略好于去年      ( 2013-04-10 第A02版：要闻 ) http://xmwb.xinmin.cn/html/2013-04/10/content_2_2.htm
     # # -------------------- test of query for specific reporter

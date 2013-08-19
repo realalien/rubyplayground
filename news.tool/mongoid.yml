@@ -6,7 +6,7 @@ development:
         - 127.0.0.1:27017
   options:
     allow_dynamic_fields: true
-    identity_map_enabled: true
+    identity_map_enabled: false
     include_root_in_json: true
     include_type_for_serialization: true 
     # Note this can also be true if you want to preload everything, but this is

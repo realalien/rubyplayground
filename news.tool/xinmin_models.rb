@@ -17,6 +17,8 @@ class XinMinDailyArticlesModelForCollector
   
   validates :article_link,  :uniqueness => {:scope => :date_of_news}
     
+  index({ date_of_news:1}, { name: "xm_articles_idx_date"} )   
+    
   belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
   
   has_many :themes, class_name: "HackingTheme", inverse_of: :article4hacktheme, autosave: true, dependent: :delete

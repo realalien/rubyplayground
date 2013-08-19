@@ -494,7 +494,7 @@ if  __FILE__ == $0
 =end
   # ---------------------  test of 'download_news_for_date' methods
   puts "starting..."
-  XinminDailyCollector.util_listing_news_for_date(2013,6,18)
+  XinminDailyCollector.util_listing_news_for_date(2013,6,1999999999)
   puts "Listing... DONE!"  
 
   

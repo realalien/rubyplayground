@@ -201,8 +201,42 @@ end
   
 #end
 
-# # search for titles
-  
+
+
+
+  # NOTE: because sometimes we only need news of 'one day', 'some specific page', 'article title/content' 
+  def util_daily_news_on_keyword(date_start,date_end, keywords, verbose=false)
+      # clean keywords with
+      kws = []
+      if keywords.is_a? String
+          kws << keywords.gsub('|','')
+          elsif keywords.is_a? Array
+          kws = keywords.map{ |e| e.gsub('|','')}
+      end
+      
+      if date_end.nil?
+         date_end = date_start
+      end
+      
+      pois = XinMinDailyArticlesModelForCollector.includes(:pageIndex)
+      .between_dates(date_start, date_end)
+      .where("article_title" => /#{kws.join('|')}/ )
+      .desc("date_of_news")  # .and("pageIndex.page_title" => /新闻/)
+      
+      if pois.count > 0
+          articles = []
+          pois.each do | article |
+              puts "#{article.article_title.strip} \t\t ( #{article.date_of_news.strftime('%Y-%m-%d')} #{article.pageIndex.page_title} ) #{article.article_link}" if verbose
+              articles << article  # #{article.infos.map(&:reporters).flatten}
+          end
+          articles
+          else
+          pp "No data found!" if verbose
+          []
+      end
+  end
+
+  # # search for titles
   def util_articles_title_on_keyword(keywords, verbose=false)
     # clean keywords with
     kws = []
@@ -379,14 +413,14 @@ if __FILE__ == $0
 
   #util_listing_china_city_mentioned(2013, 7, 15)
 
-  #XinminDailyCollector.save_daily_news_to_db(2013,8,12,force_reload_articles=true, get_content=true, verbose=true)
+  #XinminDailyCollector.save_daily_news_to_db(2013,8,20,force_reload_articles=true, get_content=true, verbose=true)
 
   # # --------------------  query-based (no search engine) data analysis playground ---------
   # # parpare
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 15)
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 16)
-  XinminDailyCollector.save_daily_news_to_db(2013, 8, 19 ,force_reload_articles=true, get_content=true,verbose=true)
+    #XinminDailyCollector.save_daily_news_to_db(2013, 8, 19 ,force_reload_articles=true, get_content=true,verbose=true)
   #XinminDailyCollector.save_news_to_db_by_range("2013-7-15","2013-7-16")
   #puts "All done!"
   #
@@ -443,7 +477,6 @@ if __FILE__ == $0
 
   # ---------------- 
   util_articles_title_on_keyword('',true)  #  '体育彩票', '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
-
 
 
   # # ----------------  just scanning some articles without saving crawled text into local database.
@@ -560,7 +593,9 @@ failed with error 10128: "too much data for sort() with no index.  add an index 
   # * one article of 2012.11.6 news has encoding problem, author can't be processed. 2013.6.20
   # * 
 
-
+  puts "Start ...."
+  util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
+  puts "Done."
 
 end
 

@@ -312,6 +312,7 @@ def get_places_by_city_sublocality_category(city_phone_prefix, sublocality, cate
         puts "[INFO] #{max_page} pages of data found!"
         puts "---------------------------------------------------------------"
         puts "ddmap only allows 25 pages of query results. Following info may be partial."
+        puts "link(starting page): #{url} "
         puts "---------------------------------------------------------------"
     else 
         puts "[INFO] #{max_page} pages of data found!"

@@ -1,0 +1,3 @@
+academic human resource mining
+* to allow knowledge findings searches
+* as a resource link to further information, by tooling

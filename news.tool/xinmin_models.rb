@@ -19,6 +19,9 @@ class XinMinDailyArticlesModelForCollector
     
   index({ date_of_news:1}, { name: "xm_articles_idx_date"} )   
     
+  scope :on_specific_date, lambda { |date| where(:date_of_news.gte => date, :date_of_news.lte => date+1)  if date }
+  scope :between_dates, lambda { | start_date, end_date | where(:date_of_news.gte => start_date, :date_of_news.lte => end_date+1) if start_date && end_date }
+    
   belongs_to :pageIndex, class_name: "XinMinDailyPageIndexModelForCollector", inverse_of: :articles
   
   has_many :themes, class_name: "HackingTheme", inverse_of: :article4hacktheme, autosave: true, dependent: :delete

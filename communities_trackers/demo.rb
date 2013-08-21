@@ -28,8 +28,11 @@ Mongoid.logger = Logger.new($stdout)
 # #     ---> check local database (if exists, details from various data providers)
 
 
-
+if __FILE__ == $0
+    
+    
+    
+    
+    
 end
-
-
 

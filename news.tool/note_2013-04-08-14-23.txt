@@ -1,0 +1,10 @@
+For the moment, many Chinese news reading apps do have comments sections, but some drawbacks:
+* not shared（if not logged in using SNS accounts) =>  one man's work or vain outlet for personal thoughts or feelings.
+* if the news are local based or in a specific small area of interest, users could be more engaging, but a map should be provided to get a sense of local
+* 
+
+
+
+considering an archive model like the app,
+http://timeboxapp.tumblr.com/
+

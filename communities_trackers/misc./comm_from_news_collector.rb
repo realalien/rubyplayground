@@ -33,6 +33,10 @@ if __FILE__ == $0
  
 =end
     
+    util_daily_news_on_keyword(DateTime.new(2013,8,21),nil, ['小区','社区','街道', '苑', '坊', '物业'], true)
+    puts "Done."
+    
+    
     
     # extend: create a dictionary for ner search
     

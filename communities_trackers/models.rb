@@ -30,6 +30,7 @@ class Community
     field :name, type: String
     field :other_names, type: Array
     
+    field :address, type: String
     field :location, type: Point
     field :area, type: Polygon
     
@@ -45,12 +46,7 @@ class Community
     index({ name:1}, { name: "ct_ct_name"} )
     
     
-    
-    
-    
-    
-end # of cloass
-
+end # of class
 
 
 

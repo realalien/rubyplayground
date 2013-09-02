@@ -420,15 +420,15 @@ if __FILE__ == $0
 
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 15)
     #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 16)
-   #XinminDailyCollector.save_daily_news_to_db(2013, 8, 21 ,force_reload_articles=true, get_content=true,verbose=true)
-  #XinminDailyCollector.save_news_to_db_by_range("2013-7-15","2013-8-22")
+   #XinminDailyCollector.save_daily_news_to_db(2013, 8, 24 ,force_reload_articles=true, get_content=true,verbose=true)
+  #XinminDailyCollector.save_news_to_db_by_range("2013-7-15","2013-7-16")
   #puts "All done!"
   #
   
   
   #XinminDailyCollector.util_listing_news_for_date(2013, 8, 14)
 
-  
+  util_articles_title_on_keyword('谣言',true)  # ['锻炼', '健生']
 =begin
   # # --------------------  find all parsed info in embedded document
   pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
@@ -536,7 +536,7 @@ if __FILE__ == $0
 =end 
 
 =begin
- util_articles_title_on_keyword(['小区', '社区'],true) # '程序'，'编程', '游戏','代码'， '编程','卫生' '彩票', '摩根' ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
+ util_articles_title_on_keyword( [],true) # ['小区', '社区'], '程序'，'编程', '游戏','代码'， '编程','卫生' '彩票', '摩根' ['外贸', '贸易'] '听证' ['A股','股市']  ['任命','当选']  '市长'  '死' 'CPI' "事故"  ["小学","中学","中小学"] 
 
   
   /Users/dhs/.rvm/gems/ruby-1.9.3-p374@news.tool/gems/moped-1.5.0/lib/moped/node.rb:382:in `block in query': The operation: #<Moped::Protocol::Query (Moped::Errors::QueryFailure)

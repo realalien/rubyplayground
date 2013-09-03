@@ -6,12 +6,19 @@
 
 require File.join(File.dirname(__FILE__), 'const.rb')
 require File.join(File.dirname(__FILE__), 'models.rb')
-
 require File.join(File.dirname(__FILE__), 'conn_mongo.rb')
-
 
 $ACHIEVEMENT_PROGRESS_FILE = "achievement_progress.txt"
 
+
+
+
+# collect communities from ddmap
+
+
+
+
+# --------------------------------------------------------------------------------
 
 # r/w a file
 def record_today_achievement

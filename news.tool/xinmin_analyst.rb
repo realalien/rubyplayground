@@ -593,9 +593,9 @@ failed with error 10128: "too much data for sort() with no index.  add an index 
   # * one article of 2012.11.6 news has encoding problem, author can't be processed. 2013.6.20
   # * 
 
-    #puts "Start ...."
-    #util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
-    # puts "Done."
+    puts "Start ...."
+    util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
+    puts "Done."
 
 end
 

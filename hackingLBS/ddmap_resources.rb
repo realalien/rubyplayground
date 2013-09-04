@@ -8,6 +8,7 @@ require 'yaml'
 
 require 'geocoder'
 
+require File.join(File.dirname(__FILE__), 'vcr_setup.rb')
 
 DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map/21----%C3%C0%CA%B3----/
                      "住宅小区" => "D7%A1%D5%AC%D0%A1%C7%F8" ,
@@ -15,6 +16,8 @@ DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map
 }
 
 $DDMAP_PAGINATION_RESULT_LIMIT = 25
+$DELAY_RELOAD_REQUEST_WHEN_ERROR = 60
+
 
 SUB_CATEGORIES_DATA_FILE_NAME = "sub_categories.yaml"
 SUB_LOCALITY_DATA_FILE_NAME   = "sub_locality.yaml"
@@ -71,7 +74,7 @@ def read_sub_categories_by_city_code(city_code)
         YAML.load( yf ) 
     end
 end
-    
+
 # ----------
 
 def read_sub_localities_by_city_code(city_code)
@@ -127,7 +130,7 @@ def collect_sub_categories_by_city_code(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     
     css_path = "html body div#body div.siteCon div.siteCon1 ul li.Con2 p a"
     
@@ -147,7 +150,7 @@ def collect_sub_locality_by_city_code(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     
     css_path = "html body div#body div.siteCon div.areaS ul li.areaS1 a"
     
@@ -175,7 +178,7 @@ def collect_loc_categories(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     css_path = "html body div#body div.siteCon div.siteCon1"
     
     # search for list of 'ul' under above css_path
@@ -343,7 +346,6 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
     allowed_cat = read_sub_categories_by_city_code(city_code)
     allowed_sub_localities  = read_sub_localities_by_city_code(city_code)
     
-    
     unless ( allowed_cat.include?(category_name) and allowed_sub_localities.include?(sublocality_name) )
         puts "[WARNING] Either #{category_name} or #{sublocality_name} is not valid, please check with following values, "
         util_listing_categories_and_sublocality(city_code)
@@ -359,7 +361,7 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
             # save to file
             dump_places_by_city_locality_cateogry(places, city_code, sublocality_name, category_name)
         else
-            raise "[DEBUG] no sub locatiry found, please check the program!"
+            raise "[DEBUG] no sub locality found, please check the program!"
         end
     end
     
@@ -399,12 +401,19 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
     
     name_address_mapping = {}
     
+    VCR.use_cassette("collect_places_by_city_sublocality_category_#{city_code}_#{sublocality}_#{category_name}") do
+
+        
+
+    
     # get 'total pages' info, find the content with max 
     # TODO: this can be done when getting the first page of the list(query result).
     url = page_url_for_city_sublocality_category(1, city_code, sublocality, category_name )
 
+    puts "[INFO] starting page ... #{url}"
     max_page = helper_find_total_page_num(url)
-    
+    puts "[INFO] max page found .... #{} "
+        
     if  max_page > $DDMAP_PAGINATION_RESULT_LIMIT
         puts "[INFO] #{max_page} pages of data found!"
         puts "---------------------------------------------------------------"
@@ -415,7 +424,7 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
         
         # NOTE：because searching by locality has limited pages for grabing, we have to dig down to sub area for all the district
         subareas = helper_find_subarea_name_links(url)
-        pp subareas
+        puts subareas
         
         # print out self made links
         subareas.each do | area|
@@ -423,7 +432,7 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
             
             # first page
             first_page_link = page_url_for_city_subarea_category(1, city_code, area, category_name)
-            puts "[Info] Processing #{first_page_link}" if $VERBOSE
+            puts "[Info] Processing sub area via #{first_page_link}" if $VERBOSE
             mappings_of_first_page = helper_process_name_address_mapping_for_url(first_page_link)
             name_address_mapping.merge!(mappings_of_first_page)
             # other pages
@@ -432,12 +441,12 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
             
             (2..paginations).each do | page_num |
                 other_page_link = page_url_for_city_subarea_category(page_num, city_code, area, category_name)
-                puts "[Info] Processing #{other_page_link}  (of page #{page_num})" if $VERBOSE
+                puts "[Info] Processing sub area of page #{page_num}, via#{other_page_link}" if $VERBOSE
                 mappings_of_other_pages = helper_process_name_address_mapping_for_url(other_page_link)
                 name_address_mapping.merge!(mappings_of_other_pages)
                 
                 
-                pp name_address_mapping
+                puts name_address_mapping
                 # raise "Intentional break!"
                 
             end
@@ -462,14 +471,40 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
         end
     end
     
+    end # of vcr recording
+
     name_address_mapping
 end
 
 
+def defense_requests_control(url)
+    retry_count = 0
+    begin
+        io = open(url)
+        return io
+    rescue => err
+        puts "[WARNING] Error occurred in retrieving\n#{url}"
+        puts err.message
+        puts err.backtrace
+        puts "-------------------------"
+        if retry_count < 3
+            retry_count += 1
+            delay_interval = $DELAY_RELOAD_REQUEST_WHEN_ERROR * retry_count
+            puts "[INFO] waiting #{delay_interval} seconds ...(see you @ #{Time.now+delay_interval})"
+            sleep(delay_interval)
+            puts "[INFO] retrying ... #{retry_count}"
+            retry
+        else
+            puts "[Error] Aborting 3 times of trying to retrieving #{url}"
+            raise 
+        end
+    end
+end
+
 
 # to find the pagination on one listing page
 def helper_find_total_page_num(url)
-    one_doc = Nokogiri::HTML(open(url))
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
     css_nav = "html body div.content div.listL div.PageNav ul li a"
     nodeset_nav = one_doc.css(css_nav)
     max_page = 1
@@ -484,7 +519,7 @@ end
 
 # to find all name:address infos in one listing page
 def helper_process_name_address_mapping_for_url(url)
-    one_doc = Nokogiri::HTML(open(url))
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
     mappings = {}
     css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
     nodeset = one_doc.css(css_path)
@@ -499,7 +534,7 @@ end
 
 # to find the sub area under the sublocality(district) due to unreacheable data result from sublocality keyword search
 def helper_find_subarea_name_links(url)
-    one_doc = Nokogiri::HTML(open(url))
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
     subareas = []
     
     # css(*rule) ref. http://nokogiri.org/Nokogiri/XML/Node.html#method-i-css
@@ -602,14 +637,7 @@ if __FILE__ == $0
  
 =begin
 =end 
-
-    require 'pp'
     
-    city_code = "21"
-    category_name = "住宅小区"
-    # test of helper_find_subarea_name_links
-    
-
     
     
 =begin
@@ -689,5 +717,25 @@ if __FILE__ == $0
     puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape(text))
  
  
-=end    
+=end
+
+    
+=begin
+    # vcr  multiple requests cassette test
+    
+    VCR.use_cassette('tes ') do
+        open("http://www.baidu.com")
+        open("http://www.sina.com")
+    end
+=end
+    
+    # test vcr on recording encoded
+    
+    
+    
+    # test run collecting all places
+    
+    collect_places_by_city_sublocality_category("21", "虹口区", "住宅小区")
+    
+    
 end

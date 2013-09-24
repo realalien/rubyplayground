@@ -1,9 +1,14 @@
 source :gemcutter
+gem "nokogiri"
 gem "activesupport", "=3.2.3"
 gem "haml"
 gem "oauth"
 gem "json"
 gem "weibo"
+gem "vcr"
 
+gem "geocoder"
+
+gem "fakeweb"
 gem "webmock", "=1.10"
 

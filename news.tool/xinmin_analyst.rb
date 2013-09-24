@@ -421,14 +421,18 @@ if __FILE__ == $0
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 15)
     #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 16)
    #XinminDailyCollector.save_daily_news_to_db(2013, 8, 24 ,force_reload_articles=true, get_content=true,verbose=true)
-  #XinminDailyCollector.save_news_to_db_by_range("2013-7-15","2013-7-16")
+  #XinminDailyCollector.save_news_to_db_by_range("2013-8-1","2013-9-11")
   #puts "All done!"
   #
   
   
-  #XinminDailyCollector.util_listing_news_for_date(2013, 8, 14)
+  XinminDailyCollector.util_listing_news_for_date(2013, 9, 23)
 
-  util_articles_title_on_keyword('谣言',true)  # ['锻炼', '健生']
+  #util_articles_title_on_keyword('谣言',true)  # ['锻炼', '健生']
+  
+  #util_articles_title_on_keyword(['浦东','新加坡'],true)  # ['锻炼', '健生']
+  
+  
 =begin
   # # --------------------  find all parsed info in embedded document
   pages = XinMinDailyPageIndexModelForCollector.on_specific_date(DateTime.new(2013,5,30)).with_seq_no(1)
@@ -593,9 +597,9 @@ failed with error 10128: "too much data for sort() with no index.  add an index 
   # * one article of 2012.11.6 news has encoding problem, author can't be processed. 2013.6.20
   # * 
 
-    puts "Start ...."
-    util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
-    puts "Done."
+   # puts "Start ...."
+   # util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
+   # puts "Done."
 
 end
 

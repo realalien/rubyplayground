@@ -735,7 +735,7 @@ if __FILE__ == $0
     
     # test run collecting all places
     
-    collect_places_by_city_sublocality_category("21", "虹口区", "住宅小区")
+    #collect_places_by_city_sublocality_category("21", "虹口区", "住宅小区")
     
     
 end

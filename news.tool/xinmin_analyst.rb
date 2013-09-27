@@ -421,12 +421,12 @@ if __FILE__ == $0
   #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 15)
     #XinminDailyCollector.delete_daily_news_from_db(2013, 7, 16)
    #XinminDailyCollector.save_daily_news_to_db(2013, 8, 24 ,force_reload_articles=true, get_content=true,verbose=true)
-  #XinminDailyCollector.save_news_to_db_by_range("2013-8-1","2013-9-11")
+  #XinminDailyCollector.save_news_to_db_by_range("2013-3-1","2013-5-31")    # collected: "2013-3-1"to"2013-5-31",2013-6-1to2013-9-24,
   #puts "All done!"
   #
   
   
-  XinminDailyCollector.util_listing_news_for_date(2013, 9, 23)
+  XinminDailyCollector.util_listing_news_for_date(2013, 9, 25)
 
   #util_articles_title_on_keyword('谣言',true)  # ['锻炼', '健生']
   

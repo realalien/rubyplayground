@@ -84,7 +84,7 @@ class Stata
   include CouchPotato::Persistence
 
   property :name
-  property :created_at, :type => 
+  #property :created_at, :type => 
 
   view :all, :key => :created_at 
 end

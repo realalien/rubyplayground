@@ -8,11 +8,15 @@ require 'yaml'
 
 require 'geocoder'
 
+require File.join(File.dirname(__FILE__), 'vcr_setup.rb')
 
 DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map/21----%C3%C0%CA%B3----/
                      "住宅小区" => "D7%A1%D5%AC%D0%A1%C7%F8" ,
                      
 }
+
+$DDMAP_PAGINATION_RESULT_LIMIT = 25
+$DELAY_RELOAD_REQUEST_WHEN_ERROR = 60
 
 
 SUB_CATEGORIES_DATA_FILE_NAME = "sub_categories.yaml"
@@ -70,7 +74,7 @@ def read_sub_categories_by_city_code(city_code)
         YAML.load( yf ) 
     end
 end
-    
+
 # ----------
 
 def read_sub_localities_by_city_code(city_code)
@@ -126,7 +130,7 @@ def collect_sub_categories_by_city_code(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     
     css_path = "html body div#body div.siteCon div.siteCon1 ul li.Con2 p a"
     
@@ -146,7 +150,7 @@ def collect_sub_locality_by_city_code(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     
     css_path = "html body div#body div.siteCon div.areaS ul li.areaS1 a"
     
@@ -174,7 +178,7 @@ def collect_loc_categories(city_code)
     city_code.gsub!(/^0+/, "") # remove leading zero
     url = "http://www.ddmap.com/sitemap/#{city_code}/1.htm"
     # xml process
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(defense_requests_control(url))
     css_path = "html body div#body div.siteCon div.siteCon1"
     
     # search for list of 'ul' under above css_path
@@ -342,7 +346,6 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
     allowed_cat = read_sub_categories_by_city_code(city_code)
     allowed_sub_localities  = read_sub_localities_by_city_code(city_code)
     
-    
     unless ( allowed_cat.include?(category_name) and allowed_sub_localities.include?(sublocality_name) )
         puts "[WARNING] Either #{category_name} or #{sublocality_name} is not valid, please check with following values, "
         util_listing_categories_and_sublocality(city_code)
@@ -358,7 +361,7 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
             # save to file
             dump_places_by_city_locality_cateogry(places, city_code, sublocality_name, category_name)
         else
-            raise "[DEBUG] no sub locatiry found, please check the program!"
+            raise "[DEBUG] no sub locality found, please check the program!"
         end
     end
     
@@ -398,60 +401,158 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
     
     name_address_mapping = {}
     
+    VCR.use_cassette("collect_places_by_city_sublocality_category_#{city_code}_#{sublocality}_#{category_name}") do
+
+        
+
+    
     # get 'total pages' info, find the content with max 
     # TODO: this can be done when getting the first page of the list(query result).
     url = page_url_for_city_sublocality_category(1, city_code, sublocality, category_name )
-    doc = Nokogiri::HTML(open(url))
-    css_nav = "html body div.content div.listL div.PageNav ul li a"
-    nodeset_nav = doc.css(css_nav)
-    max_page = 1
-    nodeset_nav.each do |node|
-        #puts "-->  #{node.content}"
-       max_page = node.content.to_i if node.content.is_number? and node.content.to_i > max_page
-    end
-    
-    
-    if  max_page > 25 
+
+    puts "[INFO] starting page ... #{url}"
+    max_page = helper_find_total_page_num(url)
+    puts "[INFO] max page found .... #{} "
+        
+    if  max_page > $DDMAP_PAGINATION_RESULT_LIMIT
         puts "[INFO] #{max_page} pages of data found!"
         puts "---------------------------------------------------------------"
         puts "ddmap only allows 25 pages of query results. Following info may be partial."
         puts "link(starting page): #{url} "
         puts "---------------------------------------------------------------"
-    else 
+        
+        
+        # NOTE：because searching by locality has limited pages for grabing, we have to dig down to sub area for all the district
+        subareas = helper_find_subarea_name_links(url)
+        puts subareas
+        
+        # print out self made links
+        subareas.each do | area|
+            # TODO: see if memory is limited or not, we create many doc in each method call, otherwise, employ some kind of cassette mechanism for limiting web access.
+            
+            # first page
+            first_page_link = page_url_for_city_subarea_category(1, city_code, area, category_name)
+            puts "[Info] Processing sub area via #{first_page_link}" if $VERBOSE
+            mappings_of_first_page = helper_process_name_address_mapping_for_url(first_page_link)
+            name_address_mapping.merge!(mappings_of_first_page)
+            # other pages
+            paginations = helper_find_total_page_num(first_page_link)
+            puts "[Info] Found pages #{paginations}   (#{first_page_link}, CITY_CODE: #{city_code}, sub area: #{area}, category: #{category_name})" if $VERBOSE
+            
+            (2..paginations).each do | page_num |
+                other_page_link = page_url_for_city_subarea_category(page_num, city_code, area, category_name)
+                puts "[Info] Processing sub area of page #{page_num}, via#{other_page_link}" if $VERBOSE
+                mappings_of_other_pages = helper_process_name_address_mapping_for_url(other_page_link)
+                name_address_mapping.merge!(mappings_of_other_pages)
+                
+                
+                puts name_address_mapping
+                # raise "Intentional break!"
+                
+            end
+        end
+    else
+        
+        # NOTE: pagination under the limit, following search will not get sub area(one level deeper beyond the sublocality)
         puts "[INFO] #{max_page} pages of data found! Processing ..."
-    end
-    
-    # grabbing the first page which we already got when we try to find the total page
-    css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
-    nodeset = doc.css(css_path)
-    nodeset.each do | node |
-        names_node = node.at_xpath(".//h3/a")   #puts URI.unescape(names_node.content)
-        # there will be two, the first will be useful!  
-        addr_node = node.at_xpath(".//p/a")  # puts URI.unescape(addr_node.content)
-        name_address_mapping[names_node.content] = addr_node.content
-    end
-    
-    
-    # grabbing the following page 
-    if max_page >= 2
-        (2..max_page).each do |page_num| 
+        
+        # grabbing the first page which we already got when we try to find the total page
+        mappings_of_first_page = helper_process_name_address_mapping_for_url(url)
+        name_address_mapping.merge!(mappings_of_first_page)
+        
+        # grabbing the following page
+        pages_to_grab = [max_page, $DDMAP_PAGINATION_RESULT_LIMIT].min
+        (2..pages_to_grab).each do |page_num|
             puts "processing page ....  #{page_num}"  if $VERBOSE
             url = page_url_for_city_sublocality_category(page_num, city_code, sublocality, category_name )
-            doc = Nokogiri::HTML(open(url))
-            css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
-            nodeset = doc.css(css_path)
             
-            nodeset.each do | node |
-                names_node = node.at_xpath(".//h3/a")   #puts URI.unescape(names_node.content)
-                # there will be two, the first will be useful!  
-                addr_node = node.at_xpath(".//p/a")  # puts URI.unescape(addr_node.content)
-                name_address_mapping[names_node.content] = addr_node.content
-            end
+            mappings = helper_process_name_address_mapping_for_url(url)
+            name_address_mapping.merge!(mappings)
         end
     end
     
+    end # of vcr recording
+
     name_address_mapping
 end
+
+
+def defense_requests_control(url)
+    retry_count = 0
+    begin
+        io = open(url)
+        return io
+    rescue => err
+        puts "[WARNING] Error occurred in retrieving\n#{url}"
+        puts err.message
+        puts err.backtrace
+        puts "-------------------------"
+        if retry_count < 3
+            retry_count += 1
+            delay_interval = $DELAY_RELOAD_REQUEST_WHEN_ERROR * retry_count
+            puts "[INFO] waiting #{delay_interval} seconds ...(see you @ #{Time.now+delay_interval})"
+            sleep(delay_interval)
+            puts "[INFO] retrying ... #{retry_count}"
+            retry
+        else
+            puts "[Error] Aborting 3 times of trying to retrieving #{url}"
+            raise 
+        end
+    end
+end
+
+
+# to find the pagination on one listing page
+def helper_find_total_page_num(url)
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
+    css_nav = "html body div.content div.listL div.PageNav ul li a"
+    nodeset_nav = one_doc.css(css_nav)
+    max_page = 1
+    puts nodeset_nav || "no page nav"
+    
+    nodeset_nav.each do |node|
+        #puts "-->  #{node.content}"
+        max_page = node.content.to_i if node.content.is_number? and node.content.to_i > max_page
+    end
+    max_page
+end
+
+# to find all name:address infos in one listing page
+def helper_process_name_address_mapping_for_url(url)
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
+    mappings = {}
+    css_path = "html body div.content div.listL div.listMode ul.infoList1 li.info_t"
+    nodeset = one_doc.css(css_path)
+    nodeset.each do | node |
+        names_node = node.at_xpath(".//h3/a")   #puts URI.unescape(names_node.content)
+        # there will be two, the first will be useful!
+        addr_node = node.at_xpath(".//p/a")  # puts URI.unescape(addr_node.content)
+        mappings[names_node.content] = addr_node.content
+    end
+    mappings
+end
+
+# to find the sub area under the sublocality(district) due to unreacheable data result from sublocality keyword search
+def helper_find_subarea_name_links(url)
+    one_doc = Nokogiri::HTML(defense_requests_control(url))
+    subareas = []
+    
+    # css(*rule) ref. http://nokogiri.org/Nokogiri/XML/Node.html#method-i-css
+    css_path = "html body div.content div.find div.area p.area_C a"
+    nodeset = one_doc.css("#{css_path}:regex('w+')", Class.new {
+      def regex node_set, regex
+          node_set.find_all { |node| node['href'] =~ /---1/ }
+      end
+    }.new)
+    nodeset.each do | node |
+        #puts node['href']
+        subareas << node.content
+        #names_addr_node = node.at_xpath("./a")  # puts URI.unescape(addr_node.content)
+        #mappings[names_addr_node.content] = names_addr_node
+    end
+    subareas
+end
+
 
 def page_url_for_city_sublocality_category(page_num, city_code, sublocality, category_name) # page_num starts from 1
     q = "http://www.ddmap.com/map/#{city_code}"
@@ -461,6 +562,17 @@ def page_url_for_city_sublocality_category(page_num, city_code, sublocality, cat
     q += %Q{---#{page_num}-1/}  # pagination
 end
 
+#  sub area is one level deeper under sublocality, due to unreachable resultset from sublocality search. page_num starts from 1
+def page_url_for_city_subarea_category(page_num, city_code, subarea, category_name)
+    q = "http://www.ddmap.com/map/#{city_code}"
+    converter  = Iconv.new( "GB2312", "UTF-8" )
+    
+    # TODO: why this is different from sublocaity scape/unscape?
+    q += "--#{string_ddmap_encoding_chn_addr(subarea)}"  # subarea
+    q += %Q{--#{URI.encode_www_form_component(converter.iconv(category_name.encode!('UTF-8')))}}  # category_name
+    q += %Q{---#{page_num}-1/}
+end
+    
 
 def util_listing_partial_addr_coord(name_address_mapping)
     # debug
@@ -470,7 +582,12 @@ def util_listing_partial_addr_coord(name_address_mapping)
         
         sleep 1
     end
-    
+end
+
+
+def string_ddmap_encoding_chn_addr(chn_addr)
+    addr_components = chn_addr.split(/\//)
+    addr_converted = addr_components.map{|e| "#{Iconv.iconv('GB2312','UTF-8',URI.encode_www_form_component(e.encode!('GB2312')))[0]}" }.join("@L@")
 end
 
 # --------------------
@@ -503,7 +620,7 @@ end
 # --------------------
 
 
-$VERBOSE = true
+
 
 if __FILE__ == $0
     
@@ -514,9 +631,41 @@ if __FILE__ == $0
     
     
     #places = read_places_by_city_locality_cateogry("21", "虹口区", "住宅小区")
-    places = read_places_by_city_locality_cateogry("21", "徐汇区", "住宅小区")
+    #places = read_places_by_city_locality_cateogry("21", "徐汇区", "住宅小区")
+    
+    $VERBOSE = true
+ 
+=begin
+=end 
     
     
+    
+=begin
+
+   puts "%CB%C4%B4%A8%B1%B1%C2%B7\t(target:四川北路) "
+   puts URI.unescape("%CB%C4%B4%A8%B1%B1%C2%B7")
+   puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape("%CB%C4%B4%A8%B1%B1%C2%B7"))
+   puts "-----"
+   puts "#{URI.encode_www_form_component('四川北路')}\t(processed by:URI.encode_www_form_component)"
+   converter  = Iconv.new( "GB2312", "UTF-8" )
+   puts "#{converter.iconv('四川北路'.encode!('UTF-8') )}\t(processed by:Iconv.new.iconv)"
+   puts Iconv.iconv( 'GB2312','UTF-8',URI.encode_www_form_component("四川北路".encode!('GB2312')) )
+    puts URI.encode_www_form_component("四川北路".encode!('GB2312'))
+=end
+ 
+=begin
+    # test of string_ddmap_encoding_chn_addr()
+    a = "%BA%A3%C4%FE%C2%B7@L@%C6%DF%C6%D6%C2%B7"
+    target = "海宁路/七浦路"
+    a = "%C1%D9%C6%BD%C2%B7@L@%BA%CD%C6%BD%B9%AB%D4%B0"
+    target = "临平路/和平公园"
+    puts "#{a}\t(target:#{target}) "
+    puts URI.unescape(a)
+    puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape(a))
+    puts "-----"
+    puts URI.encode_www_form_component("临平路@L@和平公园".encode!('GB2312'))
+    puts string_ddmap_encoding_chn_addr(target)
+=end
     
     
 =begin 
@@ -533,6 +682,9 @@ if __FILE__ == $0
     read_places_by_city_locality_cateogry("21", "虹口区", "住宅小区")
  
     # ------ encoding exp 
+    
+    Iconv.iconv( 'GB2312','UTF-8',URI.encode_www_form_component("四川北路".encode!('GB2312'))
+ 
     puts  URI.unescape("%BB%C6%C6%D6%C7%F8").encoding
     puts URI.encode_www_form_component("黄浦区")
     converter  = Iconv.new( "GB2312", "UTF-8" )
@@ -565,5 +717,25 @@ if __FILE__ == $0
     puts Iconv.iconv('UTF-8', 'GB2312',URI.unescape(text))
  
  
-=end    
+=end
+
+    
+=begin
+    # vcr  multiple requests cassette test
+    
+    VCR.use_cassette('tes ') do
+        open("http://www.baidu.com")
+        open("http://www.sina.com")
+    end
+=end
+    
+    # test vcr on recording encoded
+    
+    
+    
+    # test run collecting all places
+    
+    #collect_places_by_city_sublocality_category("21", "虹口区", "住宅小区")
+    
+    
 end

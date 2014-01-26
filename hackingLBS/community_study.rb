@@ -33,9 +33,6 @@ end
 
 
 
-class 
-
-
 if __FILE__ == $0
     
     

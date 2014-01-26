@@ -13,7 +13,7 @@ describe "IndividualAnalyser"  do
 end
 
 
-describe ManualTagger documentation
+describe ManualTagger do
     
     # Q: is it ok to ask for user input in test case? A: 
     it "should return valid user" do 

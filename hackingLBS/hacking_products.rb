@@ -42,7 +42,7 @@ end
 
 if __FILE__ == $0
 
-	umbrella  = @"umbrella of specific brand"
+	umbrella  = "umbrella of specific brand"
 
 	evaluate_harzards_with("毛巾") do 
 		if_plate_cause_skin_effect_on "me"

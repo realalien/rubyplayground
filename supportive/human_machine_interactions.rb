@@ -36,6 +36,8 @@ Context "intelligence" do
 	listing do 
 		["safety", "convenience", "accuracy"]
 	end
+    
+    eg "Statistical regularity can be useful. The widget doesn't take any action. Rather, it gets ready to act, projecting a likey set of alternative actions on the counter so that if by chance one of them is what you are planning to do, you only have to touch and indicate yes."
 
 end
 
@@ -61,10 +63,16 @@ Context "interaction consideration between machine and human" do
 
 	eg "let interested parties to know why the machine is doing this "
   
- 
+  
+    test_case ["positive", "pleasurable", "effective"] # like artists with tools
 
- 
+    test_case ["comfortable", "friendly", "aethetically pleasing", "lighting", "calm", "restful"]
 
+
+    eg "ambient intelligence, with the goal to create smart environments that react in an attentive, adaptive and proactive way to the presenses and acitivities of humans, in ordr to provide the services taht inhabitants of these environments request or are presumed to need."
+    
+    
+    eg "need to understand the context, the reasoning behind the action. For some unsual actions."
 
 end
 
@@ -74,11 +82,21 @@ Context "software features to be implemented" do
 end
 
 Context "in the near future" do 
-	eg "monitor user eating, reading, music and tel preferences, watch where you drive, alerting insurance company, rental agency or even police, system makes gross assumptions about your intentions from a limited sample of your behaviors"
+	eg "monitor user eating, reading, music and tel preferences, watch where you drive, alerting insurance company, rental agency or even police, system makes gross assumptions about your intentions from a limited sample of your behaviors
+end
 
 
+Research "the whole process manipulation" do
+   user_case "What do you call it when people ask their phone “What’s the best used car?”,  and get all the way to purchase decision just by talking?"
+   
+end
 
-
+Study "sci-fi use cases study" do
+    eg "Star Trek"
+    eg "Joseph Weizenbaum’s 1966 program ELIZA " do
+        
+    end
+    
 end
 
 
@@ -86,4 +104,16 @@ end
 xf Notes:
 *  actual: "我1885点怎么样" （datetime, 01月26日，5:00）
    expect:  "（俏江南）1885店怎么样"
+
+
+
+
+
+* actual "请帮我找皇甫去的餐厅"(xf)
+  expect: "请帮我找黄浦区的餐厅"
+
+
+
+* actual:  "新视角餐厅酒廊" (no object.name)
+  expect:  "新视角餐厅酒廊"( as object, distinguished with "新视角餐厅")
 

@@ -426,7 +426,7 @@ if __FILE__ == $0
   #
   
   
-  XinminDailyCollector.util_listing_news_for_date(2013, 9, 25)
+  #XinminDailyCollector.util_listing_news_for_date(2013, 9, 25)
 
   #util_articles_title_on_keyword('谣言',true)  # ['锻炼', '健生']
   
@@ -568,8 +568,7 @@ failed with error 10128: "too much data for sort() with no index.  add an index 
 
   
   #XinminDailyCollector.save_daily_news_to_db(2013, 7, 3,force_reload_articles=false, get_content=true,verbose=true)
-  #XinminDailyCollector.util_listing_news_for_date(2013, 7, 19)
-
+  XinminDailyCollector.util_listing_news_for_date(2013, 12, 2)
 =begin
     # # -------------------- test of query for specific reporter
   arts = XinMinDailyArticlesModelForCollector.any_in( "infos.reporters" => ['诺诺'] )

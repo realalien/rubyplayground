@@ -22,18 +22,18 @@ if __FILE__ == $0
     
     
     # find if daily news has sth. about the specific communities.
+    require File.join(File.dirname(__FILE__), "../../news.tool/xinmin_analyst.rb" )
+    puts "Start ...."
     
 =begin
     # e.g. quick search throught one day of news, to be specific, Xinmin Daily
  
-    require File.join(File.dirname(__FILE__), "../../news.tool/xinmin_analyst.rb" )
-    puts "Start ...."
     util_daily_news_on_keyword(DateTime.new(2013,5,20), DateTime.new(2013,8,20), ['小区','社区','街道', '苑', '坊', '物业'], true)
     puts "Done."
  
 =end
-    
-    util_daily_news_on_keyword(DateTime.new(2013,8,21),nil, ['小区','社区','街道', '苑', '坊', '物业'], true)
+    require 'date'
+    util_daily_news_on_keyword(DateTime.new(2014,7,7),nil, ['小区','社区','街道', '苑', '坊', '物业'], true)
     puts "Done."
     
     

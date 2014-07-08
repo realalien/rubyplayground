@@ -742,7 +742,7 @@ if __FILE__ == $0
     
    
    
-   collected_places = read_places_by_city_locality_cateogry("0312", "", "住宅小区")
+   # collected_places = read_places_by_city_locality_cateogry("0312", "", "住宅小区")
     
     
 end

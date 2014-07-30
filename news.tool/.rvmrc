@@ -1,1 +1,1 @@
-rvm use ruby-1.9.3-p374@news.tool --default 
+rvm use ruby-1.9.3-p484@news.tool --default 

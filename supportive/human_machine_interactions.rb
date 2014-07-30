@@ -87,3 +87,6 @@ xf Notes:
 *  actual: "我1885点怎么样" （datetime, 01月26日，5:00）
    expect:  "（俏江南）1885店怎么样"
 
+
+*  actual: "你虹口区靠近乍浦路的餐厅"(landmark: 虹口区)
+   expect: "landmark: 乍浦路"

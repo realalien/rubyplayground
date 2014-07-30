@@ -6,7 +6,7 @@
 
 # NOTE: Because content of news online is not universally in one format, let me get the xinmin daily first
 
-
+require 'rubygems'
 require 'date'
 require 'nokogiri'
 require 'json'

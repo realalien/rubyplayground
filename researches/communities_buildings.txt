@@ -1,0 +1,15 @@
+
+
+http://www.xconomy.com/texas/2013/05/20/houstons-hackers-gather-to-help-city-solve-problems/
+
+>probable projects for city dev
+
+* projects that would help commuters know which routes were congested due to construction, provide a comprehensive list of the city’s bike trails, and give residents a better way to seek out and pay for permits for parades.
+
+* an online database for up-to-date restaurant inspections named after Marvin Zindler
+
+*Jonathan Zong, a junior, who along with his classmates was trying to create an open-source platform for residents’ feedback. “We would really enjoy seeing an idea come to life.”
+
+*  a program that simplified the search process related to obtaining required permits for construction, parades, and other activities
+
+

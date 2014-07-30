@@ -8,7 +8,7 @@ require 'yaml'
 
 require 'geocoder'
 
-require File.join(File.dirname(__FILE__), 'vcr_setup.rb')
+#require File.join(File.dirname(__FILE__), 'vcr_setup.rb')
 
 DDMAP_CATEGORIES = { "美食" => "%C3%C0%CA%B3"  ,    # http://www.ddmap.com/map/21----%C3%C0%CA%B3----/
                      "住宅小区" => "D7%A1%D5%AC%D0%A1%C7%F8" ,
@@ -85,12 +85,14 @@ def read_sub_localities_by_city_code(city_code)
             # save to file
             dump_sub_locality_to_file(sublocalities, city_code)
         else
-            raise "[DEBUG] no sub locatiry found, please check the program!"
+            #raise "[DEBUG] no sub locatiry found, please check the program!"
         end
     end
     
-    File.open(  sub_locality_filename_by_city_code(city_code), 'r' ) do |yf|
-        YAML.load( yf )
+    if File.exist? sub_locality_filename_by_city_code(city_code)
+        File.open(  sub_locality_filename_by_city_code(city_code), 'r' ) do |yf|
+            YAML.load( yf )
+        end
     end
 end
 
@@ -318,10 +320,10 @@ end
 # To find all the places belongs to a city, one should query using
 def util_listing_categories_and_sublocality(city_code)
     allowed_cat = read_sub_categories_by_city_code(city_code)
-    puts "Categories Allowed:\n #{allowed_cat.join(',')}"
+    puts "Categories Allowed:\n #{allowed_cat.join(',')}" if allowed_cat
     
     allowed_sub_localities  = read_sub_localities_by_city_code(city_code)
-    puts "Sublocalities Allowed:\n #{allowed_sub_localities.join(',')}"
+    puts "Sublocalities Allowed:\n #{allowed_sub_localities.join(',')}" if allowed_sub_localities
 end
 
 # ------------------------------------------------------------------------
@@ -346,7 +348,7 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
     allowed_cat = read_sub_categories_by_city_code(city_code)
     allowed_sub_localities  = read_sub_localities_by_city_code(city_code)
     
-    unless ( allowed_cat.include?(category_name) and allowed_sub_localities.include?(sublocality_name) )
+    if ( allowed_cat and category_name and allowed_cat.size > 0 and not allowed_cat.include?(category_name)) and (allowed_sub_localities and allowed_sub_localities.size > 0 and not allowed_sub_localities.include?(sublocality_name) )
         puts "[WARNING] Either #{category_name} or #{sublocality_name} is not valid, please check with following values, "
         util_listing_categories_and_sublocality(city_code)
         puts "----------------------------------------------------------------"
@@ -361,7 +363,8 @@ def read_places_by_city_locality_cateogry(city_code, sublocality_name, category_
             # save to file
             dump_places_by_city_locality_cateogry(places, city_code, sublocality_name, category_name)
         else
-            raise "[DEBUG] no sub locality found, please check the program!"
+            # NOTE: no sub locality is allowed, e.g. provincial city like HeBei BaoDing
+            #raise "[DEBUG] no sub locality found, please check the program!"
         end
     end
     
@@ -401,7 +404,7 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
     
     name_address_mapping = {}
     
-    VCR.use_cassette("collect_places_by_city_sublocality_category_#{city_code}_#{sublocality}_#{category_name}") do
+    #VCR.use_cassette("collect_places_by_city_sublocality_category_#{city_code}_#{sublocality}_#{category_name}") do
 
         
 
@@ -471,7 +474,7 @@ def collect_places_by_city_sublocality_category(city_code, sublocality, category
         end
     end
     
-    end # of vcr recording
+    #end # of vcr recording
 
     name_address_mapping
 end
@@ -736,6 +739,10 @@ if __FILE__ == $0
     # test run collecting all places
     
     #collect_places_by_city_sublocality_category("21", "虹口区", "住宅小区")
+    
+   
+   
+   # collected_places = read_places_by_city_locality_cateogry("0312", "", "住宅小区")
     
     
 end

@@ -1,0 +1,29 @@
+
+# ---- data collection
+# collect and save to database, data to collect: 1. building ages 
+#     HINT: use 'hackingLBS/ddmap_resources.rb' to collect communities names
+#     HINT: use 'http://www.baike.com/wiki/' to collect key value data
+# make it auto growing
+# collect necessary data, geo-points, populations, other public statistics
+
+
+
+# ---- fun stuff
+# question/task based one problem data visualization.
+# estimate the population, deducing the
+# estimate the maturity of local commercial entities
+
+
+
+# ---- connecting the dots
+# map out the price area
+# map out the resources (materials and the intangible)
+# map out the news (health of community, particularities)
+# map out 
+
+
+
+# ---- keep an eye on
+# political power structures
+# NGOs
+# 

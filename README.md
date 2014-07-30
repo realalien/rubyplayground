@@ -19,8 +19,8 @@ This playground project includes many sub-projects involving many aspects of wor
 ### Data Collecting, Processing
 
 * communities_trackers/   ( ... )   
-	* collect_places_by_city_sublocality_category.rb  
-	DEF: test run script for 'hackingLBS/ddmap_resources.rb', generating a map of neighbourhood name to address   
+	* misc./comm_from_ddmap_collector.rb  
+	DEF: test run script for 'hackingLBS/ddmap_resources.rb', generating a dictionary of neighbourhood name to address   
 	STATUS: OK
 	IDEA: 2014.7.8. Use data skills to visualize (on map) and draw some useful conclusions! e.g. the most likely neighbourhood is going to be demolished. e.g. prosperity study.
 	
@@ -191,7 +191,7 @@ This playground project includes many sub-projects involving many aspects of wor
 
 * zzz_code_snippets/learn_method_hood.rb
 
-	
+
 
  	
  	

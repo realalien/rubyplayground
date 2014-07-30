@@ -39,18 +39,28 @@ def remove_unwanted(str)
 end
 
 def get_attrs(doc)
-  xpath = "//*[@id='content']/p[2]"
-  node = doc.at_xpath(xpath)
-
+  xpath = "//*[@id='content']/p"
+  nodes = doc.xpath(xpath)
+  return nil unless nodes
+  puts nodes.size
+  puts nodes[1]
   raw_attrs = []
-  node.children.each do | aNode|
-    raw_attrs << remove_blankspaces(URI.unescape(aNode.content)) if aNode.content.strip != ""
-  end
- 
   cleaned = {}
-  raw_attrs.each do |e|
-    k,v = e.split("：")
-    cleaned[attr_en(k)]=remove_unwanted(v)
+  nodes.each do |node|
+    if node
+      node.children.each do | aNode|
+        raw_attrs << remove_blankspaces(URI.unescape(aNode.content)) if aNode.content.strip != ""
+      end
+      puts "#{raw_attrs}"
+     
+      raw_attrs.each do |e|
+        k,v = e.split("：")
+        cleaned[attr_en(k)]=remove_unwanted(v) if k and v
+      end
+      cleaned
+    else
+      nil
+    end
   end
   cleaned
 end
@@ -72,6 +82,7 @@ $ATTRS_CH_TO_EN = {
  
 def attr_en(attr_cn)
   $ATTRS_CH_TO_EN[attr_cn] if $ATTRS_CH_TO_EN.has_key?(attr_cn)
+  attr_cn
 end
 
 
@@ -79,7 +90,7 @@ end
 # * check total search result count  
 # * check if entry ends with '百科词条'(with detail info, not pic entry)
 # * check if it's a neighour
-def is_avail(neiborhood_name)
+def best_baike_link(neiborhood_name)
   doc = get_raw_search_page(neiborhood_name)
   # check if has search result count
   xpath="//div[@id='search-wiki']"
@@ -88,22 +99,47 @@ def is_avail(neiborhood_name)
     kw = /共搜索到约(\d+)个结果/
     result = node.text.scan(kw).flatten
     if result.size > 0
-      puts "Found  ....  #{result.size}"
+      #puts "Found  ....  #{result[0]} similar entries."
       # check among result lists
       xp = "//div[@class='result-list']"
+      
+      links = []
       nds = doc.xpath(xp)
       # TODO: pick the best one across pages, now just on the first page
       nds.each do |nd|
-        if nds.text =~ /百科词条/ && nds.text =~ /小区介绍/
+        if nd.text =~ /百科词条/ and nd.text =~ /小区介绍/ and nd.text.scan(neiborhood_name).size>0
           # iterate to find link
-          nd.css("a").each {|e| puts e['href']}
+          nd.css("a").each {|e| links << e['href']}
         end
       end
+      
+      clean_position(links)
+      
     end
-  end
-  
-  
+  end  
 end
+
+
+
+def clean_position(arr)
+  cleaned = []
+  arr.each do |a|
+    c = a.gsub(/[#|\?].*/, "")
+    cleaned << c unless cleaned.include? c
+  end
+  cleaned
+end
+
+
+def grab_attrs(neighborhood_name)
+  #arr = best_baike_link(neighborhood_name)
+  #if arr and arr.first == link_on_baike(neighborhood_name)
+    get_attrs(get_raw_page(neighborhood_name))
+  #else
+  #  nil
+ # end
+end
+
 
 
 
@@ -112,9 +148,36 @@ if __FILE__ == $0
   #puts p
   #pp get_attrs(p)
   
-  is_avail("中信和平家园")
+  #puts best_baike_link("恒业公寓")  # 中信和平家园
   puts "------"
-  #is_avail("中信和平家园xx")
+  #best_baike_link("中信和平家园xx")
+  
+  #puts link_on_baike("恒业公寓")
+  
+  #puts grab_attrs("恒业公寓")
+  
+  puts grab_attrs("华清名苑")
+  
+  #  ------------  bulk retrieving  -----------------
+  # read from files
+ 
+=begin 
+  all_hk = []
+  dict = JSON.parse( IO.read(File.join(File.dirname(__FILE__), 'sh_hk_neighbourhood.json')) )
+  dict.each_pair do |k,v|
+    puts "Processing ....  #{k}"
+    attrs = grab_attrs(k) 
+    if attrs
+       c = [k]
+       c << attrs.values
+       c.flatten
+       puts c.join("|")
+       all_hk << c.join("|")
+    end
+  end
+  
+  puts all_hk
+=end  
   
 end
 

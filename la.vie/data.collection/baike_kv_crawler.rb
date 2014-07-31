@@ -32,18 +32,20 @@ def remove_blankspaces(str)
 end
 
 def remove_unwanted(str)
-  u = {";;" => ";"}
+  # remove double semi-colon
+  # remove '\n' and text after for attributes values
+  # remove multiple blankspace
+  u = {";;" => ";", /\n.*/ => "", /\s+/ => " "}
   s = str
   u.each{|k,v| s = s.gsub(k,v) }
   s
 end
 
-def get_attrs(doc)
-  xpath = "//*[@id='content']/p"
+
+def get_attrs_by_xpath(doc, xpath)
   nodes = doc.xpath(xpath)
   return nil unless nodes
-  puts nodes.size
-  puts nodes[1]
+  #puts nodes.size
   raw_attrs = []
   cleaned = {}
   nodes.each do |node|
@@ -51,18 +53,32 @@ def get_attrs(doc)
       node.children.each do | aNode|
         raw_attrs << remove_blankspaces(URI.unescape(aNode.content)) if aNode.content.strip != ""
       end
-      puts "#{raw_attrs}"
+      #puts "Raw attrs: #{raw_attrs}"
      
       raw_attrs.each do |e|
         k,v = e.split("：")
         cleaned[attr_en(k)]=remove_unwanted(v) if k and v
       end
-      cleaned
     else
-      nil
+      cleaned = nil
     end
   end
   cleaned
+end
+
+# NOTE: because the web page is ill formatted, we have to guess all the possible node for information right now.
+def get_attrs(doc)
+  attrs = {}
+  a1 = get_attrs_by_xpath(doc, "//*[@id='content']/p2") ; #puts a1; puts "-----1";
+  a2 = get_attrs_by_xpath(doc, "//*[@id='content']/p") ;  #puts a2; puts "-----2";
+  a3 = get_attrs_by_xpath(doc, "//*[@id='content']") ;    #puts a3; puts "-----3";
+  
+  attrs.merge!(a2) if a2
+  attrs.merge!(a3) if a3
+  attrs.merge!(a1) if a1  # NOTE: /p2 is targetted node for data collecting, better formatted than other nodes
+  attrs
+  
+  
 end
 
 $ATTRS_CH_TO_EN = {
@@ -121,6 +137,9 @@ end
 
 
 
+
+
+# merge links with '#'(poistion mark) or '?'(query params)
 def clean_position(arr)
   cleaned = []
   arr.each do |a|
@@ -131,10 +150,12 @@ def clean_position(arr)
 end
 
 
+
+
 def grab_attrs(neighborhood_name)
   #arr = best_baike_link(neighborhood_name)
   #if arr and arr.first == link_on_baike(neighborhood_name)
-    get_attrs(get_raw_page(neighborhood_name))
+  attrs = get_attrs(get_raw_page(neighborhood_name))
   #else
   #  nil
  # end
@@ -156,16 +177,21 @@ if __FILE__ == $0
   
   #puts grab_attrs("恒业公寓")
   
-  puts grab_attrs("华清名苑")
+  #puts "#{link_on_baike('华清名苑')}"
+  #puts grab_attrs("华清名苑")
   
   #  ------------  bulk retrieving  -----------------
   # read from files
  
-=begin 
+=begin
+  
+=end
+
+
   all_hk = []
   dict = JSON.parse( IO.read(File.join(File.dirname(__FILE__), 'sh_hk_neighbourhood.json')) )
   dict.each_pair do |k,v|
-    puts "Processing ....  #{k}"
+    puts "Processing ....  #{k} (#{link_on_baike(k)}) "
     attrs = grab_attrs(k) 
     if attrs
        c = [k]
@@ -177,7 +203,7 @@ if __FILE__ == $0
   end
   
   puts all_hk
-=end  
+ 
   
 end
 

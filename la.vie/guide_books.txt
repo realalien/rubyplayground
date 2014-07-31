@@ -9,6 +9,7 @@
 
 
 # ---- fun stuff
+# Task: make a mobile app to auto report the real estate property, suggestion on buying or selling, act as market agency
 # question/task based one problem data visualization.
 # estimate the population, deducing the
 # estimate the maturity of local commercial entities

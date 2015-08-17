@@ -14,6 +14,8 @@ require 'mongoid'
 require 'yaml'
 require 'sanitize'
 
+require 'addressable/uri'
+
 require File.join(File.dirname(__FILE__),"xinmin_models.rb")
 require File.join(File.dirname(__FILE__),"web_page_tools.rb")
 require File.join(File.dirname(__FILE__),"text_util.rb")
@@ -30,6 +32,8 @@ Mongoid.logger = Logger.new($stdout)
 
 # ------------------------------------------------------------------------------------
 
+# NOTE: 
+# * grab the page links(with info) from first page, then grab the articles links(with info)
 class XinminDailyCollector
 
   def self.daily_news_toc_first_time(date)
@@ -50,10 +54,10 @@ class XinminDailyCollector
         yr,m,d = *[yr,m,d].map(&:to_i)
     end
     # always try to find toc from file to cut time short.
-    tmp_file = File.join(File.dirname(__FILE__), "page_index_hash_#{yr.to_i}_#{m.to_i}_#{d.to_i}.yaml")
+    tmp_file = File.join(File.dirname(__FILE__), "#{self.name}_page_index_hash_#{yr.to_i}_#{m.to_i}_#{d.to_i}.yaml")
 
     unless File.exists? tmp_file
-      toc = XinminDailyCollector.daily_news_toc_first_time(Date.new(yr,m,d))    # ;puts "toc retrieved...."
+      toc = self.daily_news_toc_first_time(Date.new(yr,m,d))    # ;puts "toc retrieved...."
 
       File.open( tmp_file, 'w' ) do |out|
         YAML.dump( toc , out )
@@ -257,7 +261,7 @@ class XinminDailyCollector
   # * example code
   # * it looks necessary to create relationship between articles and 'page index', so that we can later retrieve a specific articles(see if downloaded or not and other info.)
   def self.util_listing_news_for_date(yr,m,d)
-    toc = XinminDailyCollector.daily_news_toc_reload(yr,m,d)
+    toc = self.daily_news_toc_reload(yr,m,d)
     #useful = links_dict['pages_links'].collect{|page|  page if page['page_title'] =~ /要闻/ }
     #useful.each do |page|
     toc['pages_links'].each do |page|
@@ -469,6 +473,82 @@ end
 
 
 
+
+class SouthernDailyCollector < XinminDailyCollector
+  
+  # Notes:
+  #  http://xmwb.xinmin.cn/html/2012-10/28/node_1.htm is a one-page articles listing web page which contains:
+  #  links to the article pages whose url look like http://xmwb.xinmin.cn/html/2012-10/28/content_1_2.htm
+  
+  # for '南方都市报'(Southerns Daily), the first page appears to be like 
+  # http://epaper.oeeee.com/epaper/A/html/2015-08/13/node_2731.htm, in which
+  # /A/  (B,C,...Z),  relative path links to section 
+  # /node_2731.htm, a random node of the pages
+  def self.find_pages_links(date)
+    links_to_titles = []
+    
+    #pages_dir = "http://xmwb.xinmin.cn/html/#{date.year}-#{date.strftime('%m')}/#{date.strftime('%d')}"
+    #first_page = "#{pages_dir}/node_1.htm"
+    
+    pages_dir = "http://epaper.oeeee.com/epaper/A/html/#{date.year}-#{date.strftime('%m')}/#{date.strftime('%d')}"
+    first_page = "#{pages_dir}/node_2731.htm"
+    
+    page = WebPageTool.retrieve_content first_page
+    if page
+      # p "Section First Page downloaded, page: \n #{page}"
+      # get other section links
+      section_first_pages = []
+      page.parser.xpath("//div[@class='main_body']/div[@class='e_paper clearfix']/div[@class='right_nav']/div[@class='nav']/div[@class='bd clearfix']/a[@class='gray']").each do |node|
+        section_first_pages <<  {  :page_link => Addressable::URI.parse("#{pages_dir}/#{node['href']}").display_uri.to_s  , 'page_title' => node.content.gsub("\r\n", "") }
+      end
+      
+      #p  section_first_pages; p "%%%%%%%%%%%"
+      
+      section_first_pages.each do | sect_first_page | 
+        #pp  "Downloading section index page #{sect_first_page[:page_title]}... #{sect_first_page[:page_link]}"
+      
+        sect_index_page = WebPageTool.retrieve_content sect_first_page[:page_link]
+        if sect_index_page
+          sect_index_page.parser.xpath("//div[@class='main_body']/div[@class='e_paper clearfix']/div[@class='left']/div[@class='bd']/div[@class='con clearfix']/div[@class='right']/a").each do |node|
+            # NOTE: the pages_dir is pointed to the /epaper/A/html where other section articles are in their respective directories
+            links_to_titles << {  :page_link => Addressable::URI.parse(Addressable::URI.join("#{sect_first_page[:page_link]}","#{node['href']}")).display_uri.to_s  , 'page_title' => node.content.gsub("\r\n", "") }
+          end
+        end
+        # pp links_to_titles
+      end
+    else
+      p "Section First Page download failed."
+    end
+    
+    links_to_titles
+    
+  end
+  
+  
+  def self.find_articles_links(page_link)
+    links_articles_to_titles = []
+
+    page = WebPageTool.retrieve_content page_link
+    if page
+      page.parser.xpath("//div[@class='main_body']/div[@class='e_paper clearfix']/div[@class='right_nav']/div[@class='new_list']/div[@class='con-wrap']//li//a").each do |node|
+      # puts node['href'] ; puts node.content;
+      links_articles_to_titles << { 
+          'article_link' => Addressable::URI.parse("#{File.dirname(page_link)}/#{node['href']}").display_uri.to_s , 
+          'article_title' => node.content.gsub("\r\n", " ") }
+      end
+    end
+
+    links_articles_to_titles
+  end
+  
+  
+  
+  
+end
+
+
+
+
 if  __FILE__ == $0
   
   # -------------------------    page and article grabbing    -------------------------
@@ -582,6 +662,16 @@ end
 =end  
   
   
+=begin
+  # test SouthernDailyCollector 
+=end
+  #pages = SouthernDailyCollector.find_pages_links(DateTime.new(2015,8,13))
+  #pp pages
+  
+  #links_articles_to_titles = SouthernDailyCollector.find_articles_links("http://epaper.oeeee.com/epaper/C/html/2015-08/13/node_1495.htm")
+  #pp links_articles_to_titles
+  
+  SouthernDailyCollector.util_listing_news_for_date(2015,8,17)
   
 end
 
